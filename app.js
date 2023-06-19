@@ -4,7 +4,7 @@ const path = require("path");
 const fs = require("fs");
 
 const app = express();
-const PORT = 3000;
+const PORT = 5555;
 const PING_INTERVAL = 5000; // 5 seconds
 const MAX_HISTORY = (24 * 60 * 60 * 1000) / PING_INTERVAL; // Number of pings to keep in history for 24 hours
 
@@ -53,7 +53,6 @@ function pingGoogle() {
       if (monitoringMinutes % 180 === 0) {
         sendMonitoringReport();
       }
-
     })
     .catch((error) => {
       console.error("Error pinging Google:", error);
@@ -63,22 +62,10 @@ function pingGoogle() {
 // Ping Google every 5 seconds
 setInterval(pingGoogle, PING_INTERVAL);
 
-// Uptime endpoint
-app.get("/uptime", (req, res) => {
-  const uptimePercentage24h = calculateUptimePercentage(getLast24HoursUptime());
-  const uptimePercentageLifetime = calculateUptimePercentage(uptimeHistory);
-
-  res.json({
-    uptimePercentage24h,
-    uptimePercentageLifetime,
-    lastUpdated: timeSince(appStartTime),
-  });
-});
-
-// Get the uptime history for the last 24 hours
-function getLast24HoursUptime() {
+// Get the uptime history for the last N hours
+function getLastNUptime(hours) {
   const now = Date.now();
-  const startTime = now - MAX_HISTORY * PING_INTERVAL;
+  const startTime = now - (hours * 60 * 60 * 1000);
   const startIndex = Math.max(0, Math.floor((startTime - now) / PING_INTERVAL));
 
   return uptimeHistory.slice(startIndex);
@@ -96,13 +83,43 @@ function calculateUptimePercentage(pingResults) {
   return (successfulPings / totalPings) * 100;
 }
 
-function sendMonitoringReport() {
-  const uptimePercentage24h = calculateUptimePercentage(getLast24HoursUptime());
+// Get the uptime history for the last hour
+function getLastHourUptime() {
+  return getLastNUptime(1);
+}
+
+// Get the uptime history for the last 10 minutes
+function getLast10MinutesUptime() {
+  return getLastNUptime(0.17); // 0.17 hours = 10 minutes
+}
+
+// Uptime endpoint
+app.get("/uptime", (req, res) => {
+  const uptimePercentage24h = calculateUptimePercentage(getLastNUptime(24));
   const uptimePercentageLifetime = calculateUptimePercentage(uptimeHistory);
+  const uptimePercentageLastHour = calculateUptimePercentage(getLastHourUptime());
+  const uptimePercentageLast10Minutes = calculateUptimePercentage(getLast10MinutesUptime());
+
+  res.json({
+    uptimePercentage24h,
+    uptimePercentageLifetime,
+    uptimePercentageLastHour,
+    uptimePercentageLast10Minutes,
+    lastUpdated: timeSince(appStartTime),
+  });
+});
+
+function sendMonitoringReport() {
+  const uptimePercentage24h = calculateUptimePercentage(getLastNUptime(24));
+  const uptimePercentageLifetime = calculateUptimePercentage(uptimeHistory);
+  const uptimePercentageLastHour = calculateUptimePercentage(getLastHourUptime());
+  const uptimePercentageLast10Minutes = calculateUptimePercentage(getLast10MinutesUptime());
   const uptimeReport = `
     <h1>Monitoring Report</h1>
     <p>Uptime percentage (last 24 hours): ${uptimePercentage24h}%</p>
     <p>Uptime percentage (lifetime): ${uptimePercentageLifetime}%</p>
+    <p>Uptime percentage (last hour): ${uptimePercentageLastHour}%</p>
+    <p>Uptime percentage (last 10 minutes): ${uptimePercentageLast10Minutes}%</p>
     <p>Monitored for: ${timeSince(appStartTime)}</p>
   `;
 

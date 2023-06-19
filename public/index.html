@@ -51,6 +51,8 @@
   <div class="container">
     <div class="card">
       <h1>Internet uptime</h1>
+      <p>Last 10 Minute: <span id="uptime10m"></span><span class="percentage-square"></span></p>
+      <p>Last 1 Hour: <span id="uptime1h"></span><span class="percentage-square"></span></p>
       <p>Last 24 Hours: <span id="uptime24h"></span><span class="percentage-square"></span></p>
       <p>Lifetime: <span id="uptimeLifetime"></span><span class="percentage-square"></span></p>
       <small><b>monitoring for <span id="lastUpdated"></span></small></b>
@@ -62,17 +64,26 @@
       fetch('/uptime')
         .then(response => response.json())
         .then(data => {
+          // uptimePercentageLastHour
+          const uptime10mElement = document.getElementById('uptime10m');
+          const update1hElement = document.getElementById('uptime1h');
           const uptime24hElement = document.getElementById('uptime24h');
           const uptimeLifetimeElement = document.getElementById('uptimeLifetime');
           const lastUpdated = document.getElementById('lastUpdated');
           
+          uptime10mElement.textContent = data.uptimePercentageLast10Minutes.toFixed(2);
+          update1hElement.textContent = data.uptimePercentageLastHour.toFixed(2);
           uptime24hElement.textContent = data.uptimePercentage24h.toFixed(2);
           uptimeLifetimeElement.textContent = data.uptimePercentageLifetime.toFixed(2);
           lastUpdated.textContent = data.lastUpdated;
 
+          const uptime10mSquare = document.querySelector('#uptime10m + .percentage-square');
+          const uptime1hSquare = document.querySelector('#uptime1h + .percentage-square');
           const uptime24hSquare = document.querySelector('#uptime24h + .percentage-square');
           const uptimeLifetimeSquare = document.querySelector('#uptimeLifetime + .percentage-square');
 
+          updatePercentageSquare(uptime10mSquare, data.uptimePercentageLast10Minutes);
+          updatePercentageSquare(uptime1hSquare, data.uptimePercentageLastHour);
           updatePercentageSquare(uptime24hSquare, data.uptimePercentage24h);
           updatePercentageSquare(uptimeLifetimeSquare, data.uptimePercentageLifetime);
         })
