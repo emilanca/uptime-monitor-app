@@ -1,6 +1,7 @@
 const express = require("express");
 const ping = require("ping");
 const path = require("path");
+const fs = require("fs");
 
 const app = express();
 const PORT = 3000;
@@ -45,6 +46,14 @@ function pingGoogle() {
       if (uptimeHistory.length > MAX_HISTORY) {
         uptimeHistory.shift(); // Remove the oldest ping result if exceeding the maximum history length
       }
+
+      const monitoringTime = Date.now() - appStartTime;
+      const monitoringMinutes = Math.floor(monitoringTime / 1000 * 60);
+
+      if (monitoringMinutes % 180 === 0) {
+        sendMonitoringReport();
+      }
+
     })
     .catch((error) => {
       console.error("Error pinging Google:", error);
@@ -85,6 +94,26 @@ function calculateUptimePercentage(pingResults) {
   }
 
   return (successfulPings / totalPings) * 100;
+}
+
+function sendMonitoringReport() {
+  const uptimePercentage24h = calculateUptimePercentage(getLast24HoursUptime());
+  const uptimePercentageLifetime = calculateUptimePercentage(uptimeHistory);
+  const uptimeReport = `
+    <h1>Monitoring Report</h1>
+    <p>Uptime percentage (last 24 hours): ${uptimePercentage24h}%</p>
+    <p>Uptime percentage (lifetime): ${uptimePercentageLifetime}%</p>
+    <p>Monitored for: ${timeSince(appStartTime)}</p>
+  `;
+
+  const reportPath = path.join(__dirname, "reports");
+  const reportFileName = `report_${Date.now()}.html`;
+  const reportFilePath = path.join(reportPath, reportFileName);
+
+  fs.mkdirSync(reportPath, { recursive: true });
+  fs.writeFileSync(reportFilePath, uptimeReport);
+
+  console.log("Monitoring report saved:", reportFilePath);
 }
 
 // Set the public folder as a static directory
