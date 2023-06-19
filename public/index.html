@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Uptime Monitor</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .card {
+      padding: 20px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      background-color: #f5f5f5;
+      width: 300px;
+    }
+    .percentage-square {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      margin-left: 5px;
+    }
+    .percentage-square.green {
+      background-color: #00ff00;
+    }
+    .percentage-square.yellow {
+      background-color: #ffff00;
+    }
+    .percentage-square.red {
+      background-color: #ff0000;
+    }
+    h1 {
+      margin-top: 0;
+    }
+    p {
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h1>Internet uptime</h1>
+      <p>Last 24 Hours: <span id="uptime24h"></span><span class="percentage-square"></span></p>
+      <p>Lifetime: <span id="uptimeLifetime"></span><span class="percentage-square"></span></p>
+      <small><b>monitoring for <span id="lastUpdated"></span></small></b>
+    </div>
+  </div>
+  
+  <script>
+    function fetchUptimeData() {
+      fetch('/uptime')
+        .then(response => response.json())
+        .then(data => {
+          const uptime24hElement = document.getElementById('uptime24h');
+          const uptimeLifetimeElement = document.getElementById('uptimeLifetime');
+          const lastUpdated = document.getElementById('lastUpdated');
+          
+          uptime24hElement.textContent = data.uptimePercentage24h.toFixed(2);
+          uptimeLifetimeElement.textContent = data.uptimePercentageLifetime.toFixed(2);
+          lastUpdated.textContent = data.lastUpdated;
+
+          const uptime24hSquare = document.querySelector('#uptime24h + .percentage-square');
+          const uptimeLifetimeSquare = document.querySelector('#uptimeLifetime + .percentage-square');
+
+          updatePercentageSquare(uptime24hSquare, data.uptimePercentage24h);
+          updatePercentageSquare(uptimeLifetimeSquare, data.uptimePercentageLifetime);
+        })
+        .catch(error => {
+          console.error('Error fetching uptime data:', error);
+        });
+    }
+
+    function updatePercentageSquare(square, percentage) {
+      square.className = 'percentage-square';
+
+      if (percentage >= 95) {
+        square.classList.add('green');
+      } else if (percentage >= 90) {
+        square.classList.add('yellow');
+      } else {
+        square.classList.add('red');
+      }
+    }
+    
+    // Fetch uptime data on page load
+    fetchUptimeData();
+    
+    // Fetch uptime data every 5 seconds
+    setInterval(fetchUptimeData, 5000);
+  </script>
+</body>
+</html>
