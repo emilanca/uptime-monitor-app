@@ -6,7 +6,6 @@ const fs = require("fs");
 const app = express();
 const PORT = 5555;
 const PING_INTERVAL = 5000; // 5 seconds
-const MAX_HISTORY = (24 * 60 * 60 * 1000) / PING_INTERVAL; // Number of pings to keep in history for 24 hours
 
 const uptimeHistory = [];
 const appStartTime = Date.now();
@@ -42,15 +41,12 @@ function pingGoogle() {
   ping.promise
     .probe("google.com")
     .then((result) => {
-      uptimeHistory.push(result.alive);
-      if (uptimeHistory.length > MAX_HISTORY) {
-        uptimeHistory.shift(); // Remove the oldest ping result if exceeding the maximum history length
-      }
+      uptimeHistory.push({ alive: result.alive, timestamp: Date.now() } );
 
       const monitoringTime = Date.now() - appStartTime;
-      const monitoringMinutes = Math.floor(monitoringTime / 1000 * 60);
+      const monitoringMinutes = Math.floor(monitoringTime / 1000 / 60);
 
-      if (monitoringMinutes % 180 === 0) {
+      if (monitoringMinutes != 0 && monitoringMinutes % 180 === 0) {
         sendMonitoringReport();
       }
     })
@@ -66,15 +62,13 @@ setInterval(pingGoogle, PING_INTERVAL);
 function getLastNUptime(hours) {
   const now = Date.now();
   const startTime = now - (hours * 60 * 60 * 1000);
-  const startIndex = Math.max(0, Math.floor((startTime - now) / PING_INTERVAL));
-
-  return uptimeHistory.slice(startIndex);
+  return uptimeHistory.filter(res => res.timestamp >= startTime);
 }
 
 // Calculate the uptime percentage given an array of ping results
 function calculateUptimePercentage(pingResults) {
   const totalPings = pingResults.length;
-  const successfulPings = pingResults.filter((result) => result).length;
+  const successfulPings = pingResults.filter((result) => result.alive).length;
 
   if (totalPings === 0) {
     return 0; // No pings yet, so uptime percentage is 0
