@@ -44,9 +44,9 @@ function pingGoogle() {
       uptimeHistory.push({ alive: result.alive, timestamp: Date.now() } );
 
       const monitoringTime = Date.now() - appStartTime;
-      const monitoringMinutes = Math.floor(monitoringTime / 1000 / 60);
+      const monitoringSeconds = Math.floor(monitoringTime / 1000 );
 
-      if (monitoringMinutes != 0 && monitoringMinutes % 180 === 0) {
+      if (monitoringSeconds != 0 && monitoringSeconds % 28800 === 0) {
         sendMonitoringReport();
       }
     })
