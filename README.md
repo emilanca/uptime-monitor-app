@@ -2,4 +2,4 @@
 
 Basic internet uptime monitoring web app
 
-`node app.js` to start, available on `http://localhost:3000/`
+`node app.js` to start, available on `http://localhost:5555/`
