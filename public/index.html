@@ -71,10 +71,10 @@
           const uptimeLifetimeElement = document.getElementById('uptimeLifetime');
           const lastUpdated = document.getElementById('lastUpdated');
           
-          uptime10mElement.textContent = data.uptimePercentageLast10Minutes.toFixed(2);
-          update1hElement.textContent = data.uptimePercentageLastHour.toFixed(2);
-          uptime24hElement.textContent = data.uptimePercentage24h.toFixed(2);
-          uptimeLifetimeElement.textContent = data.uptimePercentageLifetime.toFixed(2);
+          uptime10mElement.textContent = data.uptimePercentageLast10Minutes.toFixed(5);
+          update1hElement.textContent = data.uptimePercentageLastHour.toFixed(5);
+          uptime24hElement.textContent = data.uptimePercentage24h.toFixed(5);
+          uptimeLifetimeElement.textContent = data.uptimePercentageLifetime.toFixed(5);
           lastUpdated.textContent = data.lastUpdated;
 
           const uptime10mSquare = document.querySelector('#uptime10m + .percentage-square');
