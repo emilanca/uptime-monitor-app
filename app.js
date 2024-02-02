@@ -41,13 +41,28 @@ function pingGoogle() {
   ping.promise
     .probe("google.com")
     .then((result) => {
-      uptimeHistory.push({ alive: result.alive, timestamp: Date.now() } );
+      if (!result.alive) {
+        // Retry once
+        ping.promise.probe("github.com").then((retryResult) => {
+          console.log("Google is not alive. Retrying once with github...", retryResult.alive);
+          uptimeHistory.push({ alive: retryResult.alive, timestamp: Date.now(), retry: true});
 
-      const monitoringTime = Date.now() - appStartTime;
-      const monitoringSeconds = Math.floor(monitoringTime / 1000 );
+          const monitoringTime = Date.now() - appStartTime;
+          const monitoringSeconds = Math.floor(monitoringTime / 1000);
 
-      if (monitoringSeconds != 0 && monitoringSeconds % 28800 === 0) {
-        sendMonitoringReport();
+          if (monitoringSeconds != 0 && monitoringSeconds % 28800 === 0) {
+            sendMonitoringReport();
+          }
+        });
+      } else {
+        uptimeHistory.push({ alive: result.alive, timestamp: Date.now(), retry: false });
+
+        const monitoringTime = Date.now() - appStartTime;
+        const monitoringSeconds = Math.floor(monitoringTime / 1000);
+
+        if (monitoringSeconds != 0 && monitoringSeconds % 28800 === 0) {
+          sendMonitoringReport();
+        }
       }
     })
     .catch((error) => {
@@ -93,6 +108,7 @@ app.get("/uptime", (req, res) => {
   const uptimePercentageLifetime = calculateUptimePercentage(uptimeHistory);
   const uptimePercentageLastHour = calculateUptimePercentage(getLastHourUptime());
   const uptimePercentageLast10Minutes = calculateUptimePercentage(getLast10MinutesUptime());
+  const totalRetries = uptimeHistory.filter(res => res.retry).length;
 
   res.json({
     uptimePercentage24h,
@@ -100,6 +116,7 @@ app.get("/uptime", (req, res) => {
     uptimePercentageLastHour,
     uptimePercentageLast10Minutes,
     lastUpdated: timeSince(appStartTime),
+    totalRetries
   });
 });
 
