@@ -51,11 +51,12 @@
   <div class="container">
     <div class="card">
       <h1>Internet uptime</h1>
-      <p>Last 10 Minute: <span id="uptime10m"></span><span class="percentage-square"></span></p>
-      <p>Last 1 Hour: <span id="uptime1h"></span><span class="percentage-square"></span></p>
-      <p>Last 24 Hours: <span id="uptime24h"></span><span class="percentage-square"></span></p>
-      <p>Lifetime: <span id="uptimeLifetime"></span><span class="percentage-square"></span></p>
-      <small>total retries <span id="totalRetries"></span></small><br><br>
+      <p>Last 10M <span id="uptime10m"></span><span class="percentage-square"></span></p>
+      <p>Last 01H <span id="uptime1h"></span><span class="percentage-square"></span></p>
+      <p>Last 24H <span id="uptime24h"></span><span class="percentage-square"></span></p>
+      <p>Lifetime <span id="uptimeLifetime"></span><span class="percentage-square"></span></p>
+      <small>total retries <span id="totalRetries"></span></small><br>
+      <small>total probe <span id="totalProbes"></span></small><br><br>
       <small><b>monitoring for <span id="lastUpdated"></span></small></b>
     </div>
   </div>
@@ -72,6 +73,7 @@
           const uptimeLifetimeElement = document.getElementById('uptimeLifetime');
           const lastUpdated = document.getElementById('lastUpdated');
           const totalRetries = document.getElementById('totalRetries');
+          const totalProbes = document.getElementById('totalProbes');
           
           uptime10mElement.textContent = data.uptimePercentageLast10Minutes.toFixed(5);
           update1hElement.textContent = data.uptimePercentageLastHour.toFixed(5);
@@ -79,6 +81,7 @@
           uptimeLifetimeElement.textContent = data.uptimePercentageLifetime.toFixed(5);
           lastUpdated.textContent = data.lastUpdated;
           totalRetries.textContent = data.totalRetries;
+          totalProbes.textContent = data.totalProbes;
 
           const uptime10mSquare = document.querySelector('#uptime10m + .percentage-square');
           const uptime1hSquare = document.querySelector('#uptime1h + .percentage-square');

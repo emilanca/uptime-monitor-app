@@ -109,6 +109,7 @@ app.get("/uptime", (req, res) => {
   const uptimePercentageLastHour = calculateUptimePercentage(getLastHourUptime());
   const uptimePercentageLast10Minutes = calculateUptimePercentage(getLast10MinutesUptime());
   const totalRetries = uptimeHistory.filter(res => res.retry).length;
+  const getTotalProbes = uptimeHistory.length;
 
   res.json({
     uptimePercentage24h,
@@ -116,7 +117,8 @@ app.get("/uptime", (req, res) => {
     uptimePercentageLastHour,
     uptimePercentageLast10Minutes,
     lastUpdated: timeSince(appStartTime),
-    totalRetries
+    totalRetries,
+    totalProbes: getTotalProbes
   });
 });
 
