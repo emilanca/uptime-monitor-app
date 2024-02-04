@@ -57,7 +57,7 @@
       <p>Lifetime <span id="uptimeLifetime"></span><span class="percentage-square"></span></p>
       <small>retries <span id="totalRetries"></span></small><br>
       <small>probes <span id="totalProbes"></span></small><br><br>
-      <p><span><table id="daysTable"></table></p>
+      <p><span><table id="aggregatesTable"></table></p>
       <small><b>monitoring for <span id="lastUpdated"></span></small></b>  
       </table>
     </div>
@@ -95,7 +95,7 @@
           updatePercentageSquare(uptime24hSquare, data.uptimePercentage24h);
           updatePercentageSquare(uptimeLifetimeSquare, data.uptimePercentageLifetime);
 
-          buildDaysTable(data.daysAggregates);
+          buildAggregatesTable(data.aggregates);
         })
         .catch(error => {
           console.error('Error fetching uptime data:', error);
@@ -114,15 +114,15 @@
       }
     }
 
-    function buildDaysTable(data) {
-      const table = document.getElementById('daysTable');
+    function buildAggregatesTable(data) {
+      const table = document.getElementById('aggregatesTable');
       table.innerHTML = '';
       if (data.length === 0) {
         return;
       }
       const thead = table.createTHead();
       const row = thead.insertRow();
-      const headers = ['Day', 'Uptime', 'Retries', 'Probes'];
+      const headers = ['4-Hour chnk', 'Uptime', 'Retries', 'Probes'];
       for (const header of headers) {
         const th = document.createElement('th');
         const text = document.createTextNode(header);

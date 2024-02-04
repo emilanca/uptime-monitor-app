@@ -8,7 +8,7 @@ const PORT = 5555;
 const PING_INTERVAL = 5000; // 5 seconds
 
 const uptimeHistory = [];
-const daysAggregates = [];
+const aggregates = [];
 const appStartTime = Date.now();
 
 function timeSince(date) {
@@ -107,14 +107,14 @@ function getLast10MinutesUptime() {
 }
 
 function clearHistoryAndUpdateAggregates() {
-  daysAggregates.push({
-    day: daysAggregates.length + 1,
+  aggregates.push({
+    day: aggregates.length + 1,
     uptime: calculateUptimePercentage(uptimeHistory),
     probes: uptimeHistory.length,
     retries: uptimeHistory.filter(res => res.retry).length
   })
   uptimeHistory.length = 0;
-  console.log("Aggregates updated:", daysAggregates);
+  console.log("Aggregates updated:", aggregates);
 }
 
 // Uptime endpoint
@@ -123,8 +123,8 @@ app.get("/uptime", (req, res) => {
   const uptimePercentageLifetime = calculateUptimePercentage(uptimeHistory);
   const uptimePercentageLastHour = calculateUptimePercentage(getLastHourUptime());
   const uptimePercentageLast10Minutes = calculateUptimePercentage(getLast10MinutesUptime());
-  const totalRetries = uptimeHistory.filter(res => res.retry).length + daysAggregates.reduce((acc, day) => acc + day.retries, 0);;
-  const getTotalProbes = uptimeHistory.length + daysAggregates.reduce((acc, day) => acc + day.probes, 0);
+  const totalRetries = uptimeHistory.filter(res => res.retry).length + aggregates.reduce((acc, day) => acc + day.retries, 0);;
+  const getTotalProbes = uptimeHistory.length + aggregates.reduce((acc, day) => acc + day.probes, 0);
 
   res.json({
     uptimePercentage24h,
@@ -134,7 +134,7 @@ app.get("/uptime", (req, res) => {
     lastUpdated: timeSince(appStartTime),
     totalRetries,
     totalProbes: getTotalProbes,
-    daysAggregates,
+    aggregates,
   });
 });
 
