@@ -8,6 +8,7 @@ const PORT = 5555;
 const PING_INTERVAL = 5000; // 5 seconds
 
 const uptimeHistory = [];
+const daysAggregates = [];
 const appStartTime = Date.now();
 
 function timeSince(date) {
@@ -73,6 +74,9 @@ function pingGoogle() {
 // Ping Google every 5 seconds
 setInterval(pingGoogle, PING_INTERVAL);
 
+// Store aggregates and clear every 24 hours
+setInterval(clearHistoryAndUpdateAggregates, 86400000);
+
 // Get the uptime history for the last N hours
 function getLastNUptime(hours) {
   const now = Date.now();
@@ -102,14 +106,25 @@ function getLast10MinutesUptime() {
   return getLastNUptime(0.17); // 0.17 hours = 10 minutes
 }
 
+function clearHistoryAndUpdateAggregates() {
+  daysAggregates.push({
+    day: daysAggregates.length + 1,
+    uptime: calculateUptimePercentage(uptimeHistory),
+    probes: uptimeHistory.length,
+    retries: uptimeHistory.filter(res => res.retry).length
+  })
+  uptimeHistory.length = 0;
+  console.log("Aggregates updated:", daysAggregates);
+}
+
 // Uptime endpoint
 app.get("/uptime", (req, res) => {
   const uptimePercentage24h = calculateUptimePercentage(getLastNUptime(24));
   const uptimePercentageLifetime = calculateUptimePercentage(uptimeHistory);
   const uptimePercentageLastHour = calculateUptimePercentage(getLastHourUptime());
   const uptimePercentageLast10Minutes = calculateUptimePercentage(getLast10MinutesUptime());
-  const totalRetries = uptimeHistory.filter(res => res.retry).length;
-  const getTotalProbes = uptimeHistory.length;
+  const totalRetries = uptimeHistory.filter(res => res.retry).length + daysAggregates.reduce((acc, day) => acc + day.retries, 0);;
+  const getTotalProbes = uptimeHistory.length + daysAggregates.reduce((acc, day) => acc + day.probes, 0);
 
   res.json({
     uptimePercentage24h,
@@ -118,7 +133,8 @@ app.get("/uptime", (req, res) => {
     uptimePercentageLast10Minutes,
     lastUpdated: timeSince(appStartTime),
     totalRetries,
-    totalProbes: getTotalProbes
+    totalProbes: getTotalProbes,
+    daysAggregates,
   });
 });
 

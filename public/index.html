@@ -55,9 +55,11 @@
       <p>Last 01H <span id="uptime1h"></span><span class="percentage-square"></span></p>
       <p>Last 24H <span id="uptime24h"></span><span class="percentage-square"></span></p>
       <p>Lifetime <span id="uptimeLifetime"></span><span class="percentage-square"></span></p>
-      <small>retries<span id="totalRetries"></span></small><br>
-      <small>probes<span id="totalProbes"></span></small><br><br>
-      <small><b>monitoring for <span id="lastUpdated"></span></small></b>
+      <small>retries <span id="totalRetries"></span></small><br>
+      <small>probes <span id="totalProbes"></span></small><br><br>
+      <p><span><table id="daysTable"></table></p>
+      <small><b>monitoring for <span id="lastUpdated"></span></small></b>  
+      </table>
     </div>
   </div>
   
@@ -92,6 +94,8 @@
           updatePercentageSquare(uptime1hSquare, data.uptimePercentageLastHour);
           updatePercentageSquare(uptime24hSquare, data.uptimePercentage24h);
           updatePercentageSquare(uptimeLifetimeSquare, data.uptimePercentageLifetime);
+
+          buildDaysTable(data.daysAggregates);
         })
         .catch(error => {
           console.error('Error fetching uptime data:', error);
@@ -107,6 +111,35 @@
         square.classList.add('yellow');
       } else {
         square.classList.add('red');
+      }
+    }
+
+    function buildDaysTable(data) {
+      const table = document.getElementById('daysTable');
+      table.innerHTML = '';
+      if (data.length === 0) {
+        return;
+      }
+      const thead = table.createTHead();
+      const row = thead.insertRow();
+      const headers = ['Day', 'Uptime', 'Retries', 'Probes'];
+      for (const header of headers) {
+        const th = document.createElement('th');
+        const text = document.createTextNode(header);
+        th.appendChild(text);
+        row.appendChild(th);
+      }      
+         
+      for (const day of data) {
+        const row = table.insertRow();
+        const cell1 = row.insertCell(0);
+        const cell2 = row.insertCell(1);
+        const cell3 = row.insertCell(2);
+        const cell4 = row.insertCell(3);
+        cell1.innerHTML = day.day;
+        cell2.innerHTML = day.uptime.toFixed(5);
+        cell3.innerHTML = day.retries;
+        cell4.innerHTML = day.probes;
       }
     }
     
