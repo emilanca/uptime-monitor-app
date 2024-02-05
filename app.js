@@ -74,8 +74,8 @@ function pingGoogle() {
 // Ping Google every 5 seconds
 setInterval(pingGoogle, PING_INTERVAL);
 
-// Store aggregates and clear every 24 hours
-setInterval(clearHistoryAndUpdateAggregates, 86400000);
+// Store aggregates and clear every 4 hours
+setInterval(clearHistoryAndUpdateAggregates, 14400000);
 
 // Get the uptime history for the last N hours
 function getLastNUptime(hours) {
