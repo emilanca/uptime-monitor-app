@@ -46,8 +46,7 @@ function pingGoogle() {
         // Retry once
         ping.promise.probe("github.com").then((retryResult) => {
           console.log("Google is not alive. Retrying once with github...", retryResult.alive);
-          uptimeHistory.push({ alive: retryResult.alive, timestamp: Date.now(), retry: true});
-
+          uptimeHistory.push({ alive: retryResult.alive, time: retryResult.time, packetLoss: parseFloat(retryResult.packetLoss), timestamp: Date.now(), retry: true});
           const monitoringTime = Date.now() - appStartTime;
           const monitoringSeconds = Math.floor(monitoringTime / 1000);
 
@@ -56,7 +55,7 @@ function pingGoogle() {
           }
         });
       } else {
-        uptimeHistory.push({ alive: result.alive, timestamp: Date.now(), retry: false });
+        uptimeHistory.push({ alive: result.alive, time: result.time, packetLoss: parseFloat(result.packetLoss), timestamp: Date.now(), retry: false });
 
         const monitoringTime = Date.now() - appStartTime;
         const monitoringSeconds = Math.floor(monitoringTime / 1000);
@@ -96,6 +95,42 @@ function calculateUptimePercentage(pingResults) {
   return (successfulPings / totalPings) * 100;
 }
 
+// Calculate the average response time given an array of ping results
+function calculateAverageResponseTime(pingResults) {
+  const totalPings = pingResults.length;
+  const totalResponseTime = pingResults.reduce((acc, result) => acc + result.time, 0);
+
+  if (totalPings === 0) {
+    return 0; // No pings yet, so average response time is 0
+  }
+
+  return totalResponseTime / totalPings;
+}
+
+// Calculate the average packet loss given an array of ping results
+function calculateAveragePacketLoss(pingResults) {
+  const totalPings = pingResults.length;
+  const totalPacketLoss = pingResults.reduce((acc, result) => acc + result.packetLoss, 0);
+
+  if (totalPings === 0) {
+    return 0; // No pings yet, so average packet loss is 0
+  }
+  return totalPacketLoss / totalPings;
+}
+
+// Calculate the deviation of the response time given an array of ping results
+function calculateResponseTimeDeviation(pingResults) {
+  const totalPings = pingResults.length;
+  const averageResponseTime = calculateAverageResponseTime(pingResults);
+  const totalResponseTimeDeviation = pingResults.reduce((acc, result) => acc + Math.abs(result.time - averageResponseTime), 0);
+
+  if (totalPings === 0) {
+    return 0; // No pings yet, so response time deviation is 0
+  }
+
+  return totalResponseTimeDeviation / totalPings;
+}
+
 // Get the uptime history for the last hour
 function getLastHourUptime() {
   return getLastNUptime(1);
@@ -126,6 +161,27 @@ app.get("/uptime", (req, res) => {
   const totalRetries = uptimeHistory.filter(res => res.retry).length + aggregates.reduce((acc, day) => acc + day.retries, 0);;
   const getTotalProbes = uptimeHistory.length + aggregates.reduce((acc, day) => acc + day.probes, 0);
 
+  const averageResponseTime24h = calculateAverageResponseTime(getLastNUptime(24));
+  const averageResponseTimeLifetime = calculateAverageResponseTime(uptimeHistory);
+  const averageResponseTimeLastHour = calculateAverageResponseTime(getLastHourUptime());
+  const averageResponseTimeLast10Minutes = calculateAverageResponseTime(getLast10MinutesUptime());
+
+  const maxResponseTime24h = Math.max(...getLastNUptime(24).map(res => res.time));
+  const maxResponseTimeLifetime = Math.max(...uptimeHistory.map(res => res.time));
+  const maxResponseTimeLastHour = Math.max(...getLastHourUptime().map(res => res.time));
+  const maxResponseTimeLast10Minutes = Math.max(...getLast10MinutesUptime().map(res => res.time));
+
+  const averagePacketLoss24h = calculateAveragePacketLoss(getLastNUptime(24));
+  const averagePacketLossLifetime = calculateAveragePacketLoss(uptimeHistory);
+  const averagePacketLossLastHour = calculateAveragePacketLoss(getLastHourUptime());
+  const averagePacketLossLast10Minutes = calculateAveragePacketLoss(getLast10MinutesUptime());
+
+  const responseTimeDeviation24h = calculateResponseTimeDeviation(getLastNUptime(24));
+  const responseTimeDeviationLifetime = calculateResponseTimeDeviation(uptimeHistory);
+  const responseTimeDeviationLastHour = calculateResponseTimeDeviation(getLastHourUptime());
+  const responseTimeDeviationLast10Minutes = calculateResponseTimeDeviation(getLast10MinutesUptime());
+  
+
   res.json({
     uptimePercentage24h,
     uptimePercentageLifetime,
@@ -135,6 +191,22 @@ app.get("/uptime", (req, res) => {
     totalRetries,
     totalProbes: getTotalProbes,
     aggregates,
+    averageResponseTime24h,
+    averageResponseTimeLifetime,
+    averageResponseTimeLastHour,
+    averageResponseTimeLast10Minutes,
+    averagePacketLoss24h,
+    averagePacketLossLifetime,
+    averagePacketLossLastHour,
+    averagePacketLossLast10Minutes,
+    responseTimeDeviation24h,
+    responseTimeDeviationLifetime,
+    responseTimeDeviationLastHour,
+    responseTimeDeviationLast10Minutes,
+    maxResponseTime24h,
+    maxResponseTimeLifetime,
+    maxResponseTimeLastHour,
+    maxResponseTimeLast10Minutes  
   });
 });
 

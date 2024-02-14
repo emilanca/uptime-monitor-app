@@ -21,7 +21,7 @@
       border-radius: 8px;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
       background-color: #f5f5f5;
-      width: 300px;
+      width: 600px;
     }
     .percentage-square {
       display: inline-block;
@@ -51,8 +51,9 @@
   <div class="container">
     <div class="card">
       <h1>Internet uptime</h1>
+      <h3>Interval Uptime Avg Max Packet-loss Deviation</h3>
       <p>Last 10M <span id="uptime10m"></span><span class="percentage-square"></span></p>
-      <p>Last 01H <span id="uptime1h"></span><span class="percentage-square"></span></p>
+      <p>Last 60M <span id="uptime1h"></span><span class="percentage-square"></span></p>
       <p>Last 24H <span id="uptime24h"></span><span class="percentage-square"></span></p>
       <p>Lifetime <span id="uptimeLifetime"></span><span class="percentage-square"></span></p>
       <small>retries <span id="totalRetries"></span></small><br>
@@ -77,13 +78,33 @@
           const totalRetries = document.getElementById('totalRetries');
           const totalProbes = document.getElementById('totalProbes');
           
-          uptime10mElement.textContent = data.uptimePercentageLast10Minutes.toFixed(5);
-          update1hElement.textContent = data.uptimePercentageLastHour.toFixed(5);
-          uptime24hElement.textContent = data.uptimePercentage24h.toFixed(5);
-          uptimeLifetimeElement.textContent = data.uptimePercentageLifetime.toFixed(5);
-          lastUpdated.textContent = data.lastUpdated;
-          totalRetries.textContent = data.totalRetries;
-          totalProbes.textContent = data.totalProbes;
+            uptime10mElement.textContent = data.uptimePercentageLast10Minutes.toFixed(5) 
+            + ' ' + data.averageResponseTimeLast10Minutes.toFixed(2) + 'ms'
+            + ' ' + data.maxResponseTimeLast10Minutes.toFixed(2) + 'ms'
+            + ' ' + data.averagePacketLossLast10Minutes.toFixed(2) + '%'
+            + ' ' + data.responseTimeDeviationLast10Minutes.toFixed(2) + 'ms';
+            
+            update1hElement.textContent = data.uptimePercentageLastHour.toFixed(5) 
+            + ' ' + data.averageResponseTimeLastHour.toFixed(2) + 'ms'
+            + ' ' + data.maxResponseTimeLastHour.toFixed(2) + 'ms'
+            + ' ' + data.averagePacketLossLastHour.toFixed(2) + '%'
+            + ' ' + data.responseTimeDeviationLastHour.toFixed(2) + 'ms';
+            
+            uptime24hElement.textContent = data.uptimePercentage24h.toFixed(5) 
+            + ' ' + data.averageResponseTime24h.toFixed(2) + 'ms'
+            + ' ' + data.maxResponseTime24h.toFixed(2) + 'ms'
+            + ' ' + data.averagePacketLoss24h.toFixed(2) + '%'
+            + ' ' + data.responseTimeDeviation24h.toFixed(2) + 'ms';
+            
+            uptimeLifetimeElement.textContent = data.uptimePercentageLifetime.toFixed(5) 
+            + ' ' + data.averageResponseTimeLifetime.toFixed(2) + 'ms'
+            + ' ' + data.maxResponseTimeLifetime.toFixed(2) + 'ms'
+            + ' ' + data.averagePacketLossLifetime.toFixed(2) + '%'
+            + ' ' + data.responseTimeDeviationLifetime.toFixed(2) + 'ms';
+            
+            lastUpdated.textContent = data.lastUpdated;
+            totalRetries.textContent = data.totalRetries;
+            totalProbes.textContent = data.totalProbes;
 
           const uptime10mSquare = document.querySelector('#uptime10m + .percentage-square');
           const uptime1hSquare = document.querySelector('#uptime1h + .percentage-square');
