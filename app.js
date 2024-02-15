@@ -146,38 +146,78 @@ function clearHistoryAndUpdateAggregates() {
     day: aggregates.length + 1,
     uptime: calculateUptimePercentage(uptimeHistory),
     probes: uptimeHistory.length,
-    retries: uptimeHistory.filter(res => res.retry).length
+    retries: uptimeHistory.filter(res => res.retry).length,
+    averageResponseTime: calculateAverageResponseTime(uptimeHistory),
+    maxResponseTime: Math.max(...uptimeHistory.map(res => res.time)),
+    averagePacketLoss: calculateAveragePacketLoss(uptimeHistory),
+    averageDeviation: calculateResponseTimeDeviation(uptimeHistory)
+
   })
   uptimeHistory.length = 0;
   console.log("Aggregates updated:", aggregates);
 }
 
+
+
 // Uptime endpoint
 app.get("/uptime", (req, res) => {
-  const uptimePercentage24h = calculateUptimePercentage(getLastNUptime(24));
-  const uptimePercentageLifetime = calculateUptimePercentage(uptimeHistory);
+
+  const chunks = aggregates.length
+
+  // average on using the aggregates. not 100% acurate as assumes all chunks are equal and the non aggregates might be not
+  const last24UptimeCalc = chunks >= 4 ? (calculateUptimePercentage(getLastNUptime(24)) + aggregates.slice(chunks - 3, chunks).reduce((acc, day) => acc + day.uptime, 0) / 3) / 2
+    : calculateUptimePercentage(getLastNUptime(24));
+    const lifetimeUptimeCalc = chunks >= 4 ? (calculateUptimePercentage(getLastNUptime(24)) + aggregates.reduce((acc, day) => acc + day.uptime, 0)) / (aggregates.length + 1) 
+  : calculateUptimePercentage(getLastNUptime(24));
+
+  const uptimePercentage24h = last24UptimeCalc
+  const uptimePercentageLifetime = lifetimeUptimeCalc;
   const uptimePercentageLastHour = calculateUptimePercentage(getLastHourUptime());
   const uptimePercentageLast10Minutes = calculateUptimePercentage(getLast10MinutesUptime());
   const totalRetries = uptimeHistory.filter(res => res.retry).length + aggregates.reduce((acc, day) => acc + day.retries, 0);;
   const getTotalProbes = uptimeHistory.length + aggregates.reduce((acc, day) => acc + day.probes, 0);
 
-  const averageResponseTime24h = calculateAverageResponseTime(getLastNUptime(24));
-  const averageResponseTimeLifetime = calculateAverageResponseTime(uptimeHistory);
+  
+  // average on using the aggregates. not 100% acurate as assumes all chunks are equal and the non aggrregate might be not
+  const averageResponseTime24hCalc = chunks >= 4 ? (calculateAverageResponseTime(getLastNUptime(24)) + aggregates.slice(chunks - 3, chunks).reduce((acc, day) => acc + day.averageResponseTime, 0) / 3) / 2
+    : calculateAverageResponseTime(getLastNUptime(24));
+  const averageResponseTimeLifetimeCalc = chunks >= 4 ? (calculateAverageResponseTime(getLastNUptime(24)) + aggregates.reduce((acc, day) => acc + day.averageResponseTime, 0)) / (aggregates.length + 1) 
+    : calculateAverageResponseTime(getLastNUptime(24));
+  
+
+  const averageResponseTime24h = averageResponseTime24hCalc;
+  const averageResponseTimeLifetime = averageResponseTimeLifetimeCalc;
   const averageResponseTimeLastHour = calculateAverageResponseTime(getLastHourUptime());
   const averageResponseTimeLast10Minutes = calculateAverageResponseTime(getLast10MinutesUptime());
 
-  const maxResponseTime24h = Math.max(...getLastNUptime(24).map(res => res.time));
-  const maxResponseTimeLifetime = Math.max(...uptimeHistory.map(res => res.time));
+  const maxResponseTime24hCalc = chunks >= 4 ? Math.max(...aggregates.slice(chunks - 3, chunks).map(elem => elem.maxResponseTime), ...getLastNUptime(24).map(res => res.time)) : Math.max(...getLastNUptime(24).map(res => res.time));
+  const maxResponseTimeLifetimeCalc = Math.max(...aggregates.map(elem => elem.maxResponseTime), ...uptimeHistory.map(res => res.time));
+
+  const maxResponseTime24h = maxResponseTime24hCalc;
+  const maxResponseTimeLifetime = maxResponseTimeLifetimeCalc
   const maxResponseTimeLastHour = Math.max(...getLastHourUptime().map(res => res.time));
   const maxResponseTimeLast10Minutes = Math.max(...getLast10MinutesUptime().map(res => res.time));
 
-  const averagePacketLoss24h = calculateAveragePacketLoss(getLastNUptime(24));
-  const averagePacketLossLifetime = calculateAveragePacketLoss(uptimeHistory);
+
+  // average on using the aggregates. not 100% acurate as assumes all chunks are equal and the non aggrregate might be not
+  const averagePacketLoss24hCalc = chunks >= 4 ? (calculateAveragePacketLoss(getLastNUptime(24)) + aggregates.slice(chunks - 3, chunks).reduce((acc, day) => acc + day.averagePacketLoss, 0) / 3) / 2
+    : calculateAveragePacketLoss(getLastNUptime(24));
+  const averagePacketLossLifetimeCalc = chunks >= 4 ? (calculateAveragePacketLoss(getLastNUptime(24)) + aggregates.reduce((acc, day) => acc + day.averagePacketLoss, 0))/ (aggregates.length + 1) 
+    : calculateAveragePacketLoss(getLastNUptime(24));
+    
+  const averagePacketLoss24h = averagePacketLoss24hCalc;
+  const averagePacketLossLifetime = averagePacketLossLifetimeCalc;
   const averagePacketLossLastHour = calculateAveragePacketLoss(getLastHourUptime());
   const averagePacketLossLast10Minutes = calculateAveragePacketLoss(getLast10MinutesUptime());
 
-  const responseTimeDeviation24h = calculateResponseTimeDeviation(getLastNUptime(24));
-  const responseTimeDeviationLifetime = calculateResponseTimeDeviation(uptimeHistory);
+  // average on using the aggregates. not 100% acurate as assumes all chunks are equal and the non aggrregate might be not
+  const responseTimeDeviation24hCalc = chunks >= 4 ? (calculateResponseTimeDeviation(getLastNUptime(24)) + aggregates.slice(chunks - 3, chunks).reduce((acc, day) => acc + day.averageDeviation, 0) / 3) / 2
+    : calculateResponseTimeDeviation(getLastNUptime(24));
+  const responseTimeDeviationLifetimeCalc = chunks >= 4 ? (calculateResponseTimeDeviation(getLastNUptime(24)) + aggregates.reduce((acc, day) => acc + day.averageDeviation, 0)) / (aggregates.length + 1) 
+    : calculateResponseTimeDeviation(getLastNUptime(24));
+
+  const responseTimeDeviation24h = responseTimeDeviation24hCalc;
+  const responseTimeDeviationLifetime = responseTimeDeviationLifetimeCalc;
   const responseTimeDeviationLastHour = calculateResponseTimeDeviation(getLastHourUptime());
   const responseTimeDeviationLast10Minutes = calculateResponseTimeDeviation(getLast10MinutesUptime());
   

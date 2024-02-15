@@ -143,7 +143,7 @@
       }
       const thead = table.createTHead();
       const row = thead.insertRow();
-      const headers = ['4-Hour chnk', 'Uptime', 'Retries', 'Probes'];
+      const headers = ['4-Hour chunk', 'Uptime', 'Retries', 'Probes', 'Average', 'Max', 'Packet Loss', 'Deviation'];
       for (const header of headers) {
         const th = document.createElement('th');
         const text = document.createTextNode(header);
@@ -157,10 +157,22 @@
         const cell2 = row.insertCell(1);
         const cell3 = row.insertCell(2);
         const cell4 = row.insertCell(3);
+        const cell5 = row.insertCell(4);
+        const cell6 = row.insertCell(5);
+        const cell7 = row.insertCell(6);
+        const cell8 = row.insertCell(7);
+        const cell9 = row.insertCell(8);
+
+
         cell1.innerHTML = day.day;
         cell2.innerHTML = day.uptime.toFixed(5);
         cell3.innerHTML = day.retries;
         cell4.innerHTML = day.probes;
+        cell5.innerHTML = day.averageResponseTime.toFixed(2);
+        cell6.innerHTML = day.maxResponseTime.toFixed(2);
+        cell7.innerHTML = day.averagePacketLoss.toFixed(2);
+        cell8.innerHTML = day.averageDeviation.toFixed(2);
+
       }
     }
     
