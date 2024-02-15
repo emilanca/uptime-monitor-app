@@ -153,6 +153,7 @@ function clearHistoryAndUpdateAggregates() {
     averageDeviation: calculateResponseTimeDeviation(uptimeHistory)
 
   })
+  uptimeHistory.splice(0, uptimeHistory.length);
   uptimeHistory.length = 0;
   console.log("Aggregates updated:", aggregates);
 }
