@@ -46,7 +46,7 @@ function pingGoogle() {
         // Retry once
         ping.promise.probe("github.com").then((retryResult) => {
           console.log("Google is not alive. Retrying once with github...", retryResult.alive);
-          uptimeHistory.push({ alive: retryResult.alive, time: retryResult.time, packetLoss: parseFloat(retryResult.packetLoss), timestamp: Date.now(), retry: true});
+          uptimeHistory.push({ alive: retryResult.alive, time: retryResult.time, packetLoss: retryResult.packetLoss? parseFloat(retryResult.packetLoss) : null, timestamp: Date.now(), retry: true});
           const monitoringTime = Date.now() - appStartTime;
           const monitoringSeconds = Math.floor(monitoringTime / 1000);
 
@@ -55,7 +55,7 @@ function pingGoogle() {
           }
         });
       } else {
-        uptimeHistory.push({ alive: result.alive, time: result.time, packetLoss: parseFloat(result.packetLoss), timestamp: Date.now(), retry: false });
+        uptimeHistory.push({ alive: result.alive, time: result.time, packetLoss: result.packetLoss? parseFloat(result.packetLoss) : null, timestamp: Date.now(), retry: false });
 
         const monitoringTime = Date.now() - appStartTime;
         const monitoringSeconds = Math.floor(monitoringTime / 1000);
@@ -98,7 +98,7 @@ function calculateUptimePercentage(pingResults) {
 // Calculate the average response time given an array of ping results
 function calculateAverageResponseTime(pingResults) {
   const totalPings = pingResults.length;
-  const totalResponseTime = pingResults.reduce((acc, result) => acc + result.time, 0);
+  const totalResponseTime = pingResults.filter(r => r.alive).reduce((acc, result) => acc + result.time, 0);
 
   if (totalPings === 0) {
     return 0; // No pings yet, so average response time is 0
@@ -110,7 +110,7 @@ function calculateAverageResponseTime(pingResults) {
 // Calculate the average packet loss given an array of ping results
 function calculateAveragePacketLoss(pingResults) {
   const totalPings = pingResults.length;
-  const totalPacketLoss = pingResults.reduce((acc, result) => acc + result.packetLoss, 0);
+  const totalPacketLoss = pingResults.filter(r => r.alive).reduce((acc, result) => acc + result.packetLoss, 0);
 
   if (totalPings === 0) {
     return 0; // No pings yet, so average packet loss is 0
@@ -122,7 +122,7 @@ function calculateAveragePacketLoss(pingResults) {
 function calculateResponseTimeDeviation(pingResults) {
   const totalPings = pingResults.length;
   const averageResponseTime = calculateAverageResponseTime(pingResults);
-  const totalResponseTimeDeviation = pingResults.reduce((acc, result) => acc + Math.abs(result.time - averageResponseTime), 0);
+  const totalResponseTimeDeviation = pingResults.filter(r => r.alive).reduce((acc, result) => acc + Math.abs(result.time - averageResponseTime), 0);
 
   if (totalPings === 0) {
     return 0; // No pings yet, so response time deviation is 0
