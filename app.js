@@ -192,7 +192,7 @@ app.get("/uptime", (req, res) => {
   const averageResponseTimeLast10Minutes = calculateAverageResponseTime(getLast10MinutesUptime());
 
   const maxResponseTime24hCalc = chunks >= 4 ? Math.max(...aggregates.slice(chunks - 3, chunks).map(elem => elem.maxResponseTime), ...getLastNUptime(24).filter(res => res.time).map(res => res.time)) : Math.max(...getLastNUptime(24).filter(res => res.time).map(res => res.time));
-  const maxResponseTimeLifetimeCalc = Math.max(...aggregates.map(elem => elem.maxResponseTime), ...uptimeHistory.filter(res => res.time).map(res => res.time));
+  const maxResponseTimeLifetimeCalc = Math.max(...aggregates.filter(elem => elem.maxResponseTime).map(elem => elem.maxResponseTime), ...uptimeHistory.filter(res => res.time).map(res => res.time));
 
   const maxResponseTime24h = maxResponseTime24hCalc;
   const maxResponseTimeLifetime = maxResponseTimeLifetimeCalc
