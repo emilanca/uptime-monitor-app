@@ -148,7 +148,7 @@ function clearHistoryAndUpdateAggregates() {
     probes: uptimeHistory.length,
     retries: uptimeHistory.filter(res => res.retry).length,
     averageResponseTime: calculateAverageResponseTime(uptimeHistory),
-    maxResponseTime: Math.max(...uptimeHistory.map(res => res.time)),
+    maxResponseTime: Math.max(...uptimeHistory.filter(res => res.time).map(res => res.time)),
     averagePacketLoss: calculateAveragePacketLoss(uptimeHistory),
     averageDeviation: calculateResponseTimeDeviation(uptimeHistory)
 
@@ -191,13 +191,13 @@ app.get("/uptime", (req, res) => {
   const averageResponseTimeLastHour = calculateAverageResponseTime(getLastHourUptime());
   const averageResponseTimeLast10Minutes = calculateAverageResponseTime(getLast10MinutesUptime());
 
-  const maxResponseTime24hCalc = chunks >= 4 ? Math.max(...aggregates.slice(chunks - 3, chunks).map(elem => elem.maxResponseTime), ...getLastNUptime(24).map(res => res.time)) : Math.max(...getLastNUptime(24).map(res => res.time));
-  const maxResponseTimeLifetimeCalc = Math.max(...aggregates.map(elem => elem.maxResponseTime), ...uptimeHistory.map(res => res.time));
+  const maxResponseTime24hCalc = chunks >= 4 ? Math.max(...aggregates.slice(chunks - 3, chunks).map(elem => elem.maxResponseTime), ...getLastNUptime(24).filter(res => res.time).map(res => res.time)) : Math.max(...getLastNUptime(24).filter(res => res.time).map(res => res.time));
+  const maxResponseTimeLifetimeCalc = Math.max(...aggregates.map(elem => elem.maxResponseTime), ...uptimeHistory.filter(res => res.time).map(res => res.time));
 
   const maxResponseTime24h = maxResponseTime24hCalc;
   const maxResponseTimeLifetime = maxResponseTimeLifetimeCalc
-  const maxResponseTimeLastHour = Math.max(...getLastHourUptime().map(res => res.time));
-  const maxResponseTimeLast10Minutes = Math.max(...getLast10MinutesUptime().map(res => res.time));
+  const maxResponseTimeLastHour = Math.max(...getLastHourUptime().filter(res => res.time).map(res => res.time));
+  const maxResponseTimeLast10Minutes = Math.max(...getLast10MinutesUptime().filter(res => res.time).map(res => res.time));
 
 
   // average on using the aggregates. not 100% acurate as assumes all chunks are equal and the non aggrregate might be not
