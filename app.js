@@ -1,7 +1,7 @@
-const express = require("express");
-const ping = require("ping");
-const path = require("path");
-const fs = require("fs");
+import express from "express";
+import ping from "ping";
+import path from "path";
+import fs from "fs";
 
 const app = express();
 const PORT = 5555;
@@ -191,7 +191,7 @@ app.get("/uptime", (req, res) => {
   const averageResponseTimeLastHour = calculateAverageResponseTime(getLastHourUptime());
   const averageResponseTimeLast10Minutes = calculateAverageResponseTime(getLast10MinutesUptime());
 
-  const maxResponseTime24hCalc = chunks >= 4 ? Math.max(...aggregates.slice(chunks - 3, chunks).map(elem => elem.maxResponseTime), ...getLastNUptime(24).filter(res => res.time).map(res => res.time)) : Math.max(...getLastNUptime(24).filter(res => res.time).map(res => res.time));
+  const maxResponseTime24hCalc = chunks >= 4 ? Math.max(...aggregates.slice(chunks - 3, chunks).filter(elem => elem.maxResponseTime).map(elem => elem.maxResponseTime), ...getLastNUptime(24).filter(res => res.time).map(res => res.time)) : Math.max(...getLastNUptime(24).filter(res => res.time).map(res => res.time));
   const maxResponseTimeLifetimeCalc = Math.max(...aggregates.filter(elem => elem.maxResponseTime).map(elem => elem.maxResponseTime), ...uptimeHistory.filter(res => res.time).map(res => res.time));
 
   const maxResponseTime24h = maxResponseTime24hCalc;
