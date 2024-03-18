@@ -10,6 +10,7 @@ const PING_INTERVAL = 5000; // 5 seconds
 const uptimeHistory = [];
 const aggregates = [];
 const appStartTime = Date.now();
+const __dirname = path.resolve();
 
 function timeSince(date) {
   var seconds = Math.floor((new Date() - date) / 1000);
