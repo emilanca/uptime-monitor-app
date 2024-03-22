@@ -143,13 +143,14 @@ function getLast10MinutesUptime() {
 }
 
 function clearHistoryAndUpdateAggregates() {
+  const maxResponseTime = Math.max(...uptimeHistory.filter(res => res.time).map(res => res.time));
   aggregates.push({
     day: aggregates.length + 1,
     uptime: calculateUptimePercentage(uptimeHistory),
     probes: uptimeHistory.length,
     retries: uptimeHistory.filter(res => res.retry).length,
     averageResponseTime: calculateAverageResponseTime(uptimeHistory),
-    maxResponseTime: Math.max(...uptimeHistory.filter(res => res.time).map(res => res.time)),
+    maxResponseTime: maxResponseTime? maxResponseTime : 0.00,
     averagePacketLoss: calculateAveragePacketLoss(uptimeHistory),
     averageDeviation: calculateResponseTimeDeviation(uptimeHistory)
 
