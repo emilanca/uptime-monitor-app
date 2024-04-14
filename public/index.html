@@ -24,6 +24,10 @@
       background-color: #f5f5f5;
       width: 600px;
     }
+    .footer-table {
+      margin-left: auto;
+      margin-right: auto;
+    }
     .percentage-square {
       display: inline-block;
       width: 20px;
@@ -52,16 +56,66 @@
   <div class="container">
     <div class="card">
       <h1>Internet uptime</h1>
-      <h3>Interval Uptime Avg Max Packet-loss Deviation</h3>
-      <p>Last 10M <span id="uptime10m"></span><span class="percentage-square"></span></p>
-      <p>Last 60M <span id="uptime1h"></span><span class="percentage-square"></span></p>
-      <p>Last 24H <span id="uptime24h"></span><span class="percentage-square"></span></p>
-      <p>Lifetime <span id="uptimeLifetime"></span><span class="percentage-square"></span></p>
-      <small>retries <span id="totalRetries"></span></small><br>
-      <small>probes <span id="totalProbes"></span></small><br><br>
+      <p><span><table id="coreTable">
+        <thead>
+          <tr>
+            <th>Interval</th>
+            <th>Uptime</th>
+            <th>Response Time</th>
+            <th>Max Response Time</th>
+            <th>Packet Loss</th>
+            <th>Response Time Deviation</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Last 10M</td>
+            <td id="uptime10m"></td>
+            <td id="responseTime10m"></td>
+            <td id="maxResponseTime10m"></td>
+            <td id="packetLoss10m"></td>
+            <td id="responseTimeDeviation10m"></td>
+          </tr>
+          <tr>
+            <td>Last 60M</td>
+            <td id="uptime1h"></td>
+            <td id="responseTime1h"></td>
+            <td id="maxResponseTime1h"></td>
+            <td id="packetLoss1h"></td>
+            <td id="responseTimeDeviation1h"></td>
+          </tr>
+          <tr>
+            <td>Last 24H</td>
+            <td id="uptime24h"></td>
+            <td id="responseTime24h"></td>
+            <td id="maxResponseTime24h"></td>
+            <td id="packetLoss24h"></td>
+            <td id="responseTimeDeviation24h"></td>
+          </tr>
+          <tr>
+            <td>Lifetime</td>
+            <td id="uptimeLifetime"></td>
+            <td id="responseTimeLifetime"></td>
+            <td id="maxResponseTimeLifetime"></td>
+            <td id="packetLossLifetime"></td>
+            <td id="responseTimeDeviationLifetime"></td>
+          </tr>
+        </tbody>
+      </table></span></p>
       <p><span><table id="aggregatesTable"></table></p>
-      <small><b>monitoring for <span id="lastUpdated"></span></small></b>  
       </table>
+      <table id="footer-table" class="footer-table">
+        <tr>
+          <td>Retries</td>
+          <td>Probes</td>
+        </tr>
+        <tr>
+          <td id="totalRetries"></td>
+          <td id="totalProbes"></td>
+      </table>
+      <br>
+      <br>
+      <small><b>monitoring for <span id="lastUpdated"></span></small></b>  
     </div>
   </div>
   
@@ -70,52 +124,61 @@
       fetch('/uptime')
         .then(response => response.json())
         .then(data => {
-          // uptimePercentageLastHour
           const uptime10mElement = document.getElementById('uptime10m');
-          const update1hElement = document.getElementById('uptime1h');
+          const responseTime10mElement = document.getElementById('responseTime10m');
+          const maxResponseTime10mElement = document.getElementById('maxResponseTime10m');
+          const packetLoss10mElement = document.getElementById('packetLoss10m');
+          const responseTimeDeviation10mElement = document.getElementById('responseTimeDeviation10m');
+
+          const uptime1hElement = document.getElementById('uptime1h');
+          const responseTime1hElement = document.getElementById('responseTime1h');
+          const maxResponseTime1hElement = document.getElementById('maxResponseTime1h');
+          const packetLoss1hElement = document.getElementById('packetLoss1h');
+          const responseTimeDeviation1hElement = document.getElementById('responseTimeDeviation1h');
+
           const uptime24hElement = document.getElementById('uptime24h');
+          const responseTime24hElement = document.getElementById('responseTime24h');
+          const maxResponseTime24hElement = document.getElementById('maxResponseTime24h');
+          const packetLoss24hElement = document.getElementById('packetLoss24h');
+          const responseTimeDeviation24hElement = document.getElementById('responseTimeDeviation24h');
+
           const uptimeLifetimeElement = document.getElementById('uptimeLifetime');
+          const responseTimeLifetimeElement = document.getElementById('responseTimeLifetime');
+          const maxResponseTimeLifetimeElement = document.getElementById('maxResponseTimeLifetime');
+          const packetLossLifetimeElement = document.getElementById('packetLossLifetime');
+          const responseTimeDeviationLifetimeElement = document.getElementById('responseTimeDeviationLifetime');
+
           const lastUpdated = document.getElementById('lastUpdated');
           const totalRetries = document.getElementById('totalRetries');
           const totalProbes = document.getElementById('totalProbes');
-          
-            uptime10mElement.textContent = data.uptimePercentageLast10Minutes.toFixed(5) 
-            + ' ' + data.averageResponseTimeLast10Minutes.toFixed(2) + 'ms'
-            + ' ' + data.maxResponseTimeLast10Minutes.toFixed(2) + 'ms'
-            + ' ' + data.averagePacketLossLast10Minutes.toFixed(2) + '%'
-            + ' ' + data.responseTimeDeviationLast10Minutes.toFixed(2) + 'ms';
-            
-            update1hElement.textContent = data.uptimePercentageLastHour.toFixed(5) 
-            + ' ' + data.averageResponseTimeLastHour.toFixed(2) + 'ms'
-            + ' ' + data.maxResponseTimeLastHour.toFixed(2) + 'ms'
-            + ' ' + data.averagePacketLossLastHour.toFixed(2) + '%'
-            + ' ' + data.responseTimeDeviationLastHour.toFixed(2) + 'ms';
-            
-            uptime24hElement.textContent = data.uptimePercentage24h.toFixed(5) 
-            + ' ' + data.averageResponseTime24h.toFixed(2) + 'ms'
-            + ' ' + data.maxResponseTime24h.toFixed(2) + 'ms'
-            + ' ' + data.averagePacketLoss24h.toFixed(2) + '%'
-            + ' ' + data.responseTimeDeviation24h.toFixed(2) + 'ms';
-            
-            uptimeLifetimeElement.textContent = data.uptimePercentageLifetime.toFixed(5) 
-            + ' ' + data.averageResponseTimeLifetime.toFixed(2) + 'ms'
-            + ' ' + data.maxResponseTimeLifetime.toFixed(2) + 'ms'
-            + ' ' + data.averagePacketLossLifetime.toFixed(2) + '%'
-            + ' ' + data.responseTimeDeviationLifetime.toFixed(2) + 'ms';
-            
-            lastUpdated.textContent = data.lastUpdated;
-            totalRetries.textContent = data.totalRetries;
-            totalProbes.textContent = data.totalProbes;
 
-          const uptime10mSquare = document.querySelector('#uptime10m + .percentage-square');
-          const uptime1hSquare = document.querySelector('#uptime1h + .percentage-square');
-          const uptime24hSquare = document.querySelector('#uptime24h + .percentage-square');
-          const uptimeLifetimeSquare = document.querySelector('#uptimeLifetime + .percentage-square');
+          lastUpdated.textContent = data.lastUpdated;
+          totalRetries.textContent = data.totalRetries;
+          totalProbes.textContent = data.totalProbes;
 
-          updatePercentageSquare(uptime10mSquare, data.uptimePercentageLast10Minutes);
-          updatePercentageSquare(uptime1hSquare, data.uptimePercentageLastHour);
-          updatePercentageSquare(uptime24hSquare, data.uptimePercentage24h);
-          updatePercentageSquare(uptimeLifetimeSquare, data.uptimePercentageLifetime);
+          uptime10mElement.textContent = data.uptimePercentageLast10Minutes.toFixed(5);
+          responseTime10mElement.textContent = data.averageResponseTimeLast10Minutes.toFixed(2) + 'ms';
+          maxResponseTime10mElement.textContent = data.maxResponseTimeLast10Minutes.toFixed(2) + 'ms';
+          packetLoss10mElement.textContent = data.averagePacketLossLast10Minutes.toFixed(2) + '%';
+          responseTimeDeviation10mElement.textContent = data.responseTimeDeviationLast10Minutes.toFixed(2) + 'ms';
+
+          uptime1hElement.textContent = data.uptimePercentageLastHour.toFixed(5);
+          responseTime1hElement.textContent = data.averageResponseTimeLastHour.toFixed(2) + 'ms';
+          maxResponseTime1hElement.textContent = data.maxResponseTimeLastHour.toFixed(2) + 'ms';
+          packetLoss1hElement.textContent = data.averagePacketLossLastHour.toFixed(2) + '%';
+          responseTimeDeviation1hElement.textContent = data.responseTimeDeviationLastHour.toFixed(2) + 'ms';
+
+          uptime24hElement.textContent = data.uptimePercentage24h.toFixed(5);
+          responseTime24hElement.textContent = data.averageResponseTime24h.toFixed(2) + 'ms';
+          maxResponseTime24hElement.textContent = data.maxResponseTime24h.toFixed(2) + 'ms';
+          packetLoss24hElement.textContent = data.averagePacketLoss24h.toFixed(2) + '%';
+          responseTimeDeviation24hElement.textContent = data.responseTimeDeviation24h.toFixed(2) + 'ms';
+
+          uptimeLifetimeElement.textContent = data.uptimePercentageLifetime.toFixed(5);
+          responseTimeLifetimeElement.textContent = data.averageResponseTimeLifetime.toFixed(2) + 'ms';
+          maxResponseTimeLifetimeElement.textContent = data.maxResponseTimeLifetime.toFixed(2) + 'ms';
+          packetLossLifetimeElement.textContent = data.averagePacketLossLifetime.toFixed(2) + '%';
+          responseTimeDeviationLifetimeElement.textContent = data.responseTimeDeviationLifetime.toFixed(2) + 'ms';
 
           buildAggregatesTable(data.aggregates);
         })
