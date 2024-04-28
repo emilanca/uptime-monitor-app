@@ -17,13 +17,6 @@ function timeSince(date) {
 
   var interval = seconds / 31536000;
 
-  if (interval > 1) {
-    return Math.floor(interval) + " years";
-  }
-  interval = seconds / 2592000;
-  if (interval > 1) {
-    return Math.floor(interval) + " months";
-  }
   interval = seconds / 86400;
   if (interval > 1) {
     return Math.floor(interval) + " days";
