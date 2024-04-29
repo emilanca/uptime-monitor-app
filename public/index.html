@@ -156,29 +156,29 @@
           totalRetries.textContent = data.totalRetries;
           totalProbes.textContent = data.totalProbes;
 
-          uptime10mElement.textContent = data.uptimePercentageLast10Minutes.toFixed(5);
-          responseTime10mElement.textContent = data.averageResponseTimeLast10Minutes.toFixed(2) + 'ms';
-          maxResponseTime10mElement.textContent = data.maxResponseTimeLast10Minutes.toFixed(2) + 'ms';
-          packetLoss10mElement.textContent = data.averagePacketLossLast10Minutes.toFixed(2) + '%';
-          responseTimeDeviation10mElement.textContent = data.responseTimeDeviationLast10Minutes.toFixed(2) + 'ms';
+          uptime10mElement.textContent = (data.uptimePercentageLast10Minutes || 0).toFixed(5);
+          responseTime10mElement.textContent = (data.averageResponseTimeLast10Minutes || 0).toFixed(2) + 'ms';
+          maxResponseTime10mElement.textContent = (data.maxResponseTimeLast10Minutes || 0).toFixed(2) + 'ms';
+          packetLoss10mElement.textContent = (data.averagePacketLossLast10Minutes || 0).toFixed(2) + '%';
+          responseTimeDeviation10mElement.textContent = (data.responseTimeDeviationLast10Minutes || 0).toFixed(2) + 'ms';
 
-          uptime1hElement.textContent = data.uptimePercentageLastHour.toFixed(5);
-          responseTime1hElement.textContent = data.averageResponseTimeLastHour.toFixed(2) + 'ms';
-          maxResponseTime1hElement.textContent = data.maxResponseTimeLastHour.toFixed(2) + 'ms';
-          packetLoss1hElement.textContent = data.averagePacketLossLastHour.toFixed(2) + '%';
-          responseTimeDeviation1hElement.textContent = data.responseTimeDeviationLastHour.toFixed(2) + 'ms';
+          uptime1hElement.textContent = (data.uptimePercentageLastHour || 0).toFixed(5);
+          responseTime1hElement.textContent = (data.averageResponseTimeLastHour || 0).toFixed(2) + 'ms';
+          maxResponseTime1hElement.textContent = (data.maxResponseTimeLastHour || 0).toFixed(2) + 'ms';
+          packetLoss1hElement.textContent = (data.averagePacketLossLastHour || 0).toFixed(2) + '%';
+          responseTimeDeviation1hElement.textContent = (data.responseTimeDeviationLastHour || 0).toFixed(2) + 'ms';
 
-          uptime24hElement.textContent = data.uptimePercentage24h.toFixed(5);
-          responseTime24hElement.textContent = data.averageResponseTime24h.toFixed(2) + 'ms';
-          maxResponseTime24hElement.textContent = data.maxResponseTime24h.toFixed(2) + 'ms';
-          packetLoss24hElement.textContent = data.averagePacketLoss24h.toFixed(2) + '%';
-          responseTimeDeviation24hElement.textContent = data.responseTimeDeviation24h.toFixed(2) + 'ms';
+          uptime24hElement.textContent = (data.uptimePercentage24h || 0).toFixed(5);
+          responseTime24hElement.textContent = (data.averageResponseTime24h || 0).toFixed(2) + 'ms';
+          maxResponseTime24hElement.textContent = (data.maxResponseTime24h || 0).toFixed(2) + 'ms';
+          packetLoss24hElement.textContent = (data.averagePacketLoss24h || 0).toFixed(2) + '%';
+          responseTimeDeviation24hElement.textContent = (data.responseTimeDeviation24h || 0).toFixed(2) + 'ms';
 
-          uptimeLifetimeElement.textContent = data.uptimePercentageLifetime.toFixed(5);
-          responseTimeLifetimeElement.textContent = data.averageResponseTimeLifetime.toFixed(2) + 'ms';
-          maxResponseTimeLifetimeElement.textContent = data.maxResponseTimeLifetime.toFixed(2) + 'ms';
-          packetLossLifetimeElement.textContent = data.averagePacketLossLifetime.toFixed(2) + '%';
-          responseTimeDeviationLifetimeElement.textContent = data.responseTimeDeviationLifetime.toFixed(2) + 'ms';
+          uptimeLifetimeElement.textContent = (data.uptimePercentageLifetime || 0).toFixed(5);
+          responseTimeLifetimeElement.textContent = (data.averageResponseTimeLifetime || 0).toFixed(2) + 'ms';
+          maxResponseTimeLifetimeElement.textContent = (data.maxResponseTimeLifetime || 0).toFixed(2) + 'ms';
+          packetLossLifetimeElement.textContent = (data.averagePacketLossLifetime || 0).toFixed(2) + '%';
+          responseTimeDeviationLifetimeElement.textContent = (data.responseTimeDeviationLifetime || 0).toFixed(2) + 'ms';
 
           buildAggregatesTable(data.aggregates);
         })
