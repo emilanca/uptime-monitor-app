@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ssh:*)",
+      "Bash(sshpass:*)",
+      "Bash(expect:*)",
+      "Bash(apt-get install:*)",
+      "Bash(choco install:*)",
+      "Bash(python3:*)",
+      "Bash(pip install:*)",
+      "Bash(pip3 install:*)",
+      "Bash(where python3.exe)",
+      "Bash(where python.exe)",
+      "Read(//usr/**)",
+      "Bash(ls /c/Python*)",
+      "Read(//usr/local/**)",
+      "Read(//c/Users/emila/AppData/Local/Programs/**)",
+      "Read(//c/Users/emila/AppData/Local/Programs//**)"
+    ]
+  }
+}

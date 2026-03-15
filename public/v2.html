@@ -368,6 +368,76 @@
     footer a { color: var(--text-muted); text-decoration: none; }
     footer a:hover { color: var(--text); }
 
+    .btn-danger {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 12px;
+      padding: 5px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-danger:hover {
+      border-color: var(--red);
+      color: var(--red);
+    }
+
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px 32px;
+      max-width: 380px;
+      width: 90%;
+    }
+    .modal h3 {
+      font-size: 16px;
+      margin-bottom: 10px;
+    }
+    .modal p {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+    .btn-cancel {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 13px;
+      padding: 7px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .btn-confirm-clear {
+      background: var(--red-dim);
+      border: 1px solid var(--red);
+      color: var(--red);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 7px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .btn-confirm-clear:hover { opacity: 0.85; }
+
     @media (max-width: 600px) {
       .cards, .cards-sm { grid-template-columns: 1fr 1fr; }
       main { padding: 24px 16px 60px; }
@@ -382,9 +452,22 @@
   <div class="header-meta">
     <span><span class="pulse" id="liveDot"></span> Live</span>
     <span id="monitoringFor">—</span>
+    <button class="btn-danger" onclick="openClearModal()">Clear data</button>
     <a href="/v1" style="color: var(--text-muted); text-decoration: none; font-size: 12px;">Classic UI →</a>
   </div>
 </header>
+
+<!-- Confirmation modal -->
+<div class="modal-overlay" id="clearModal">
+  <div class="modal">
+    <h3>Clear all data?</h3>
+    <p>This will permanently delete all ping history, aggregates, and reset the monitoring start time. This cannot be undone.</p>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeClearModal()">Cancel</button>
+      <button class="btn-confirm-clear" onclick="confirmClear()">Yes, clear everything</button>
+    </div>
+  </div>
+</div>
 
 <main>
 
@@ -646,6 +729,29 @@
 
   fetchData();
   setInterval(fetchData, 5000);
+
+  function openClearModal() {
+    document.getElementById('clearModal').classList.add('open');
+  }
+
+  function closeClearModal() {
+    document.getElementById('clearModal').classList.remove('open');
+  }
+
+  function confirmClear() {
+    fetch('/data', { method: 'DELETE' })
+      .then(r => r.json())
+      .then(() => {
+        closeClearModal();
+        fetchData();
+      })
+      .catch(err => console.error('Clear failed:', err));
+  }
+
+  // Close modal on backdrop click
+  document.getElementById('clearModal').addEventListener('click', function(e) {
+    if (e.target === this) closeClearModal();
+  });
 </script>
 </body>
 </html>
