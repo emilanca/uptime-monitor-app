@@ -270,6 +270,15 @@ function sendMonitoringReport() {
   console.log("Monitoring report saved:", reportFilePath);
 }
 
+// v2 UI at root, v1 at /v1 (must be before static middleware)
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "v2.html"));
+});
+
+app.get("/v1", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
 // Set the public folder as a static directory
 app.use(express.static(path.join(__dirname, "public")));
 
