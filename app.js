@@ -107,6 +107,7 @@ function safeMax(values) {
 
 let isInternetDown = false;
 let outageStart = null;
+let lastReportMs = 0;
 
 async function sendNtfy(title, message) {
   try {
@@ -193,8 +194,9 @@ function pingGoogle() {
 }
 
 function maybeReport() {
-  const monitoringSeconds = Math.floor((Date.now() - appStartTime) / 1000);
-  if (monitoringSeconds !== 0 && monitoringSeconds % 28800 === 0) {
+  const totalMs = totalMonitoredMs + (Date.now() - appStartTime);
+  if (totalMs - lastReportMs >= 28800 * 1000) {
+    lastReportMs = totalMs;
     sendMonitoringReport();
   }
 }
