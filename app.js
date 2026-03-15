@@ -18,6 +18,7 @@ const DATA_FILE = path.join(__dirname, "data", "state.json");
 let uptimeHistory = [];
 let aggregates = [];
 let appStartTime = Date.now();
+let totalMonitoredMs = 0; // cumulative monitored ms across restarts
 
 // ---------------------------------------------------------------------------
 // Persistence helpers
@@ -30,6 +31,7 @@ function loadState() {
     if (Array.isArray(state.aggregates)) aggregates = state.aggregates;
     if (Array.isArray(state.uptimeHistory)) uptimeHistory = state.uptimeHistory;
     if (typeof state.appStartTime === "number") appStartTime = state.appStartTime;
+    if (typeof state.totalMonitoredMs === "number") totalMonitoredMs = state.totalMonitoredMs;
     console.log(`State loaded: ${aggregates.length} aggregate chunks, ${uptimeHistory.length} history entries, started ${new Date(appStartTime).toISOString()}`);
   } catch (err) {
     if (err.code !== "ENOENT") {
@@ -43,7 +45,7 @@ function loadState() {
 function saveState() {
   try {
     fs.mkdirSync(path.dirname(DATA_FILE), { recursive: true });
-    fs.writeFileSync(DATA_FILE, JSON.stringify({ appStartTime, aggregates, uptimeHistory }));
+    fs.writeFileSync(DATA_FILE, JSON.stringify({ appStartTime, aggregates, uptimeHistory, totalMonitoredMs }));
   } catch (err) {
     console.error("Failed to save state to disk:", err);
   }
@@ -53,6 +55,7 @@ function clearState() {
   uptimeHistory.length = 0;
   aggregates.length = 0;
   appStartTime = Date.now();
+  totalMonitoredMs = 0;
   try {
     fs.rmSync(DATA_FILE, { force: true });
   } catch (err) {
@@ -66,30 +69,25 @@ loadState();
 // Save history every 60 seconds so we lose at most ~1 min of pings on an unclean exit
 setInterval(saveState, 60000);
 
-// Save on clean shutdown
-process.on("SIGINT", () => { saveState(); process.exit(0); });
-process.on("SIGTERM", () => { saveState(); process.exit(0); });
+// Save on clean shutdown — accumulate monitored time so "monitoring for" survives restarts
+function shutdown() {
+  totalMonitoredMs += Date.now() - appStartTime;
+  saveState();
+  process.exit(0);
+}
+process.on("SIGINT", shutdown);
+process.on("SIGTERM", shutdown);
 
 // ---------------------------------------------------------------------------
 // Utility
 // ---------------------------------------------------------------------------
 
-function timeSince(date) {
-  const seconds = Math.floor((Date.now() - date) / 1000);
-
-  let interval = seconds / 31536000;
-  if (interval > 1) return Math.floor(interval) + " years";
-
-  interval = seconds / 86400;
-  if (interval > 1) return Math.floor(interval) + " days";
-
-  interval = seconds / 3600;
-  if (interval > 1) return Math.floor(interval) + " hours";
-
-  interval = seconds / 60;
-  if (interval > 1) return Math.floor(interval) + " minutes";
-
-  return Math.floor(seconds) + " seconds";
+function formatDuration(ms) {
+  const seconds = Math.floor(ms / 1000);
+  if (seconds / 86400 >= 1) return Math.floor(seconds / 86400) + " days";
+  if (seconds / 3600 >= 1) return Math.floor(seconds / 3600) + " hours";
+  if (seconds / 60 >= 1) return Math.floor(seconds / 60) + " minutes";
+  return seconds + " seconds";
 }
 
 // Returns 0 instead of -Infinity when the array is empty
@@ -145,7 +143,7 @@ function pingGoogle() {
           console.log("Google is not alive. Retrying once with github...", retryResult.alive);
           uptimeHistory.push({
             alive: retryResult.alive,
-            time: retryResult.time,
+            time: null, // don't record GitHub response time — it's a different host
             packetLoss: retryResult.packetLoss ? parseFloat(retryResult.packetLoss) : null,
             timestamp: Date.now(),
             retry: true,
@@ -186,19 +184,31 @@ setInterval(pingGoogle, PING_INTERVAL);
 // ---------------------------------------------------------------------------
 
 function clearHistoryAndUpdateAggregates() {
-  const maxResponseTime = safeMax(uptimeHistory.filter(res => res.alive && res.time).map(res => res.time));
+  // Primary pings only (non-retry, alive) are used for response time metrics
+  const alivePrimary = uptimeHistory.filter(r => r.alive && !r.retry && r.time);
+  const avgRT = calculateAverageResponseTime(uptimeHistory);
+  const maxResponseTime = safeMax(alivePrimary.map(r => r.time));
+
   aggregates.push({
     day: aggregates.length + 1,
+    // Display fields (keep for UI table)
     uptime: calculateUptimePercentage(uptimeHistory),
     probes: uptimeHistory.filter(res => !res.retry).length,
     retries: uptimeHistory.filter(res => res.retry).length,
-    averageResponseTime: calculateAverageResponseTime(uptimeHistory),
+    averageResponseTime: avgRT,
     maxResponseTime,
     averagePacketLoss: calculateAveragePacketLoss(uptimeHistory),
     averageDeviation: calculateResponseTimeDeviation(uptimeHistory),
+    // Raw counts for correct weighted averages across chunks
+    successfulProbes: uptimeHistory.filter(r => r.alive).length,
+    totalProbesCount: uptimeHistory.length,
+    totalResponseTime: alivePrimary.reduce((s, r) => s + r.time, 0),
+    alivePrimaryCount: alivePrimary.length,
+    totalPacketLossSum: uptimeHistory.reduce((s, r) => s + (r.alive ? (r.packetLoss ?? 0) : 100), 0),
+    totalDeviationSum: alivePrimary.reduce((s, r) => s + Math.abs(r.time - avgRT), 0),
   });
   uptimeHistory.length = 0;
-  console.log("Aggregates updated:", aggregates);
+  console.log("Aggregates updated:", aggregates.length, "chunks");
   // Save immediately after aggregating — this data is valuable
   saveState();
 }
@@ -206,7 +216,7 @@ function clearHistoryAndUpdateAggregates() {
 setInterval(clearHistoryAndUpdateAggregates, 14400000);
 
 // ---------------------------------------------------------------------------
-// Metric calculations
+// Metric calculations (live history)
 // ---------------------------------------------------------------------------
 
 function getLastNUptime(hours) {
@@ -223,8 +233,9 @@ function calculateUptimePercentage(pingResults) {
   return (successfulPings / pingResults.length) * 100;
 }
 
+// Only uses primary (non-retry) pings so GitHub latency doesn't pollute Google metrics
 function calculateAverageResponseTime(pingResults) {
-  const alivePings = pingResults.filter(r => r.alive);
+  const alivePings = pingResults.filter(r => r.alive && !r.retry && r.time);
   if (alivePings.length === 0) return 0;
   const total = alivePings.reduce((acc, r) => acc + r.time, 0);
   return total / alivePings.length;
@@ -239,12 +250,83 @@ function calculateAveragePacketLoss(pingResults) {
   return total / pingResults.length;
 }
 
+// Only uses primary (non-retry) pings for the same reason as above
 function calculateResponseTimeDeviation(pingResults) {
-  const alivePings = pingResults.filter(r => r.alive);
+  const alivePings = pingResults.filter(r => r.alive && !r.retry && r.time);
   if (alivePings.length === 0) return 0;
   const avg = calculateAverageResponseTime(pingResults);
   const totalDev = alivePings.reduce((acc, r) => acc + Math.abs(r.time - avg), 0);
   return totalDev / alivePings.length;
+}
+
+// ---------------------------------------------------------------------------
+// Weighted metric calculations across chunks + live data
+//
+// Old chunks (before this fix) lack raw count fields — fall back to
+// approximations derived from the stored averages and probe counts.
+// ---------------------------------------------------------------------------
+
+function chunkRaw(c) {
+  const totalCount = c.totalProbesCount ?? (c.probes + c.retries);
+  const aliveCount = c.alivePrimaryCount ?? c.probes;
+  return {
+    successfulProbes: c.successfulProbes ?? Math.round((c.uptime / 100) * totalCount),
+    totalProbesCount: totalCount,
+    totalResponseTime: c.totalResponseTime ?? (c.averageResponseTime * aliveCount),
+    alivePrimaryCount: aliveCount,
+    totalPacketLossSum: c.totalPacketLossSum ?? (c.averagePacketLoss * totalCount),
+    totalDeviationSum: c.totalDeviationSum ?? (c.averageDeviation * aliveCount),
+    maxResponseTime: c.maxResponseTime ?? 0,
+  };
+}
+
+function calcUptime(chunks, liveHistory) {
+  const hist = chunks.reduce((acc, c) => {
+    const r = chunkRaw(c);
+    return { successful: acc.successful + r.successfulProbes, total: acc.total + r.totalProbesCount };
+  }, { successful: 0, total: 0 });
+  const liveSuccessful = liveHistory.filter(r => r.alive).length;
+  const total = hist.total + liveHistory.length;
+  return total === 0 ? 0 : ((hist.successful + liveSuccessful) / total) * 100;
+}
+
+function calcAvgResponseTime(chunks, liveHistory) {
+  const hist = chunks.reduce((acc, c) => {
+    const r = chunkRaw(c);
+    return { totalRT: acc.totalRT + r.totalResponseTime, count: acc.count + r.alivePrimaryCount };
+  }, { totalRT: 0, count: 0 });
+  const livePrimary = liveHistory.filter(r => r.alive && !r.retry && r.time);
+  const liveRT = livePrimary.reduce((s, r) => s + r.time, 0);
+  const count = hist.count + livePrimary.length;
+  return count === 0 ? 0 : (hist.totalRT + liveRT) / count;
+}
+
+function calcMaxResponseTime(chunks, liveHistory) {
+  const chunkMaxes = chunks.map(c => chunkRaw(c).maxResponseTime);
+  const liveTimes = liveHistory.filter(r => r.alive && !r.retry && r.time).map(r => r.time);
+  return safeMax([...chunkMaxes, ...liveTimes]);
+}
+
+function calcAvgPacketLoss(chunks, liveHistory) {
+  const hist = chunks.reduce((acc, c) => {
+    const r = chunkRaw(c);
+    return { totalPL: acc.totalPL + r.totalPacketLossSum, count: acc.count + r.totalProbesCount };
+  }, { totalPL: 0, count: 0 });
+  const livePL = liveHistory.reduce((s, r) => s + (r.alive ? (r.packetLoss ?? 0) : 100), 0);
+  const count = hist.count + liveHistory.length;
+  return count === 0 ? 0 : (hist.totalPL + livePL) / count;
+}
+
+function calcDeviation(chunks, liveHistory) {
+  const hist = chunks.reduce((acc, c) => {
+    const r = chunkRaw(c);
+    return { totalDev: acc.totalDev + r.totalDeviationSum, count: acc.count + r.alivePrimaryCount };
+  }, { totalDev: 0, count: 0 });
+  const livePrimary = liveHistory.filter(r => r.alive && !r.retry && r.time);
+  const liveAvg = calculateAverageResponseTime(liveHistory);
+  const liveDev = livePrimary.reduce((s, r) => s + Math.abs(r.time - liveAvg), 0);
+  const count = hist.count + livePrimary.length;
+  return count === 0 ? 0 : (hist.totalDev + liveDev) / count;
 }
 
 // ---------------------------------------------------------------------------
@@ -253,75 +335,45 @@ function calculateResponseTimeDeviation(pingResults) {
 
 app.get("/uptime", (req, res) => {
   const chunks = aggregates.length;
+  const last5Chunks = aggregates.slice(Math.max(0, chunks - 5));
+  const live = uptimeHistory;
+  const lastHour = getLastHourUptime();
+  const last10Min = getLast10MinutesUptime();
 
-  // Use last 5 chunks (5 × 4h = 20h) + current window to cover a full 24h span
-  const last24UptimeCalc = chunks >= 5
-    ? (calculateUptimePercentage(getLastNUptime(24)) + aggregates.slice(chunks - 5, chunks).reduce((acc, d) => acc + d.uptime, 0) / 5) / 2
-    : calculateUptimePercentage(getLastNUptime(24));
-
-  const lifetimeUptimeCalc = chunks >= 5
-    ? (calculateUptimePercentage(getLastNUptime(24)) + aggregates.reduce((acc, d) => acc + d.uptime, 0)) / (chunks + 1)
-    : calculateUptimePercentage(getLastNUptime(24));
-
-  const averageResponseTime24hCalc = chunks >= 5
-    ? (calculateAverageResponseTime(getLastNUptime(24)) + aggregates.slice(chunks - 5, chunks).reduce((acc, d) => acc + d.averageResponseTime, 0) / 5) / 2
-    : calculateAverageResponseTime(getLastNUptime(24));
-
-  const averageResponseTimeLifetimeCalc = chunks >= 5
-    ? (calculateAverageResponseTime(getLastNUptime(24)) + aggregates.reduce((acc, d) => acc + d.averageResponseTime, 0)) / (chunks + 1)
-    : calculateAverageResponseTime(getLastNUptime(24));
-
-  const maxResponseTime24hCalc = chunks >= 5
-    ? safeMax([
-        ...aggregates.slice(chunks - 5, chunks).filter(e => e.maxResponseTime).map(e => e.maxResponseTime),
-        ...getLastNUptime(24).filter(r => r.alive && r.time).map(r => r.time),
-      ])
-    : safeMax(getLastNUptime(24).filter(r => r.alive && r.time).map(r => r.time));
-
-  const averagePacketLoss24hCalc = chunks >= 5
-    ? (calculateAveragePacketLoss(getLastNUptime(24)) + aggregates.slice(chunks - 5, chunks).reduce((acc, d) => acc + d.averagePacketLoss, 0) / 5) / 2
-    : calculateAveragePacketLoss(getLastNUptime(24));
-
-  const averagePacketLossLifetimeCalc = chunks >= 5
-    ? (calculateAveragePacketLoss(getLastNUptime(24)) + aggregates.reduce((acc, d) => acc + d.averagePacketLoss, 0)) / (chunks + 1)
-    : calculateAveragePacketLoss(getLastNUptime(24));
-
-  const responseTimeDeviation24hCalc = chunks >= 5
-    ? (calculateResponseTimeDeviation(getLastNUptime(24)) + aggregates.slice(chunks - 5, chunks).reduce((acc, d) => acc + d.averageDeviation, 0) / 5) / 2
-    : calculateResponseTimeDeviation(getLastNUptime(24));
-
-  const responseTimeDeviationLifetimeCalc = chunks >= 5
-    ? (calculateResponseTimeDeviation(getLastNUptime(24)) + aggregates.reduce((acc, d) => acc + d.averageDeviation, 0)) / (chunks + 1)
-    : calculateResponseTimeDeviation(getLastNUptime(24));
+  // Total monitored time = all previous sessions + current session
+  const monitoredMs = totalMonitoredMs + (Date.now() - appStartTime);
 
   res.json({
-    uptimePercentage24h: last24UptimeCalc,
-    uptimePercentageLifetime: lifetimeUptimeCalc,
-    uptimePercentageLastHour: calculateUptimePercentage(getLastHourUptime()),
-    uptimePercentageLast10Minutes: calculateUptimePercentage(getLast10MinutesUptime()),
-    lastUpdated: timeSince(appStartTime),
-    totalRetries: uptimeHistory.filter(r => r.retry).length + aggregates.reduce((acc, d) => acc + d.retries, 0),
-    totalProbes: uptimeHistory.filter(r => !r.retry).length + aggregates.reduce((acc, d) => acc + d.probes, 0),
+    // Short windows — live data only (always within the current 4h window)
+    uptimePercentageLast10Minutes: calculateUptimePercentage(last10Min),
+    uptimePercentageLastHour: calculateUptimePercentage(lastHour),
+    averageResponseTimeLast10Minutes: calculateAverageResponseTime(last10Min),
+    averageResponseTimeLastHour: calculateAverageResponseTime(lastHour),
+    maxResponseTimeLast10Minutes: safeMax(last10Min.filter(r => r.alive && !r.retry && r.time).map(r => r.time)),
+    maxResponseTimeLastHour: safeMax(lastHour.filter(r => r.alive && !r.retry && r.time).map(r => r.time)),
+    averagePacketLossLast10Minutes: calculateAveragePacketLoss(last10Min),
+    averagePacketLossLastHour: calculateAveragePacketLoss(lastHour),
+    responseTimeDeviationLast10Minutes: calculateResponseTimeDeviation(last10Min),
+    responseTimeDeviationLastHour: calculateResponseTimeDeviation(lastHour),
+
+    // 24h = weighted across last 5 completed chunks (up to 20h) + current live window
+    uptimePercentage24h: calcUptime(last5Chunks, live),
+    averageResponseTime24h: calcAvgResponseTime(last5Chunks, live),
+    maxResponseTime24h: calcMaxResponseTime(last5Chunks, live),
+    averagePacketLoss24h: calcAvgPacketLoss(last5Chunks, live),
+    responseTimeDeviation24h: calcDeviation(last5Chunks, live),
+
+    // Lifetime = weighted across all chunks + current live window
+    uptimePercentageLifetime: calcUptime(aggregates, live),
+    averageResponseTimeLifetime: calcAvgResponseTime(aggregates, live),
+    maxResponseTimeLifetime: calcMaxResponseTime(aggregates, live),
+    averagePacketLossLifetime: calcAvgPacketLoss(aggregates, live),
+    responseTimeDeviationLifetime: calcDeviation(aggregates, live),
+
+    lastUpdated: formatDuration(monitoredMs),
+    totalRetries: live.filter(r => r.retry).length + aggregates.reduce((acc, d) => acc + d.retries, 0),
+    totalProbes: live.filter(r => !r.retry).length + aggregates.reduce((acc, d) => acc + d.probes, 0),
     aggregates,
-    averageResponseTime24h: averageResponseTime24hCalc,
-    averageResponseTimeLifetime: averageResponseTimeLifetimeCalc,
-    averageResponseTimeLastHour: calculateAverageResponseTime(getLastHourUptime()),
-    averageResponseTimeLast10Minutes: calculateAverageResponseTime(getLast10MinutesUptime()),
-    averagePacketLoss24h: averagePacketLoss24hCalc,
-    averagePacketLossLifetime: averagePacketLossLifetimeCalc,
-    averagePacketLossLastHour: calculateAveragePacketLoss(getLastHourUptime()),
-    averagePacketLossLast10Minutes: calculateAveragePacketLoss(getLast10MinutesUptime()),
-    responseTimeDeviation24h: responseTimeDeviation24hCalc,
-    responseTimeDeviationLifetime: responseTimeDeviationLifetimeCalc,
-    responseTimeDeviationLastHour: calculateResponseTimeDeviation(getLastHourUptime()),
-    responseTimeDeviationLast10Minutes: calculateResponseTimeDeviation(getLast10MinutesUptime()),
-    maxResponseTime24h: maxResponseTime24hCalc,
-    maxResponseTimeLifetime: safeMax([
-      ...aggregates.filter(e => e.maxResponseTime).map(e => e.maxResponseTime),
-      ...uptimeHistory.filter(r => r.alive && r.time).map(r => r.time),
-    ]),
-    maxResponseTimeLastHour: safeMax(getLastHourUptime().filter(r => r.alive && r.time).map(r => r.time)),
-    maxResponseTimeLast10Minutes: safeMax(getLast10MinutesUptime().filter(r => r.alive && r.time).map(r => r.time)),
   });
 });
 
@@ -340,13 +392,18 @@ app.delete("/data", (req, res) => {
 // ---------------------------------------------------------------------------
 
 function sendMonitoringReport() {
+  const live = uptimeHistory;
+  const chunks = aggregates.length;
+  const last5Chunks = aggregates.slice(Math.max(0, chunks - 5));
+  const monitoredMs = totalMonitoredMs + (Date.now() - appStartTime);
+
   const uptimeReport = `
     <h1>Monitoring Report</h1>
-    <p>Uptime percentage (last 24 hours): ${calculateUptimePercentage(getLastNUptime(24))}%</p>
-    <p>Uptime percentage (lifetime): ${calculateUptimePercentage(uptimeHistory)}%</p>
-    <p>Uptime percentage (last hour): ${calculateUptimePercentage(getLastHourUptime())}%</p>
-    <p>Uptime percentage (last 10 minutes): ${calculateUptimePercentage(getLast10MinutesUptime())}%</p>
-    <p>Monitored for: ${timeSince(appStartTime)}</p>
+    <p>Uptime percentage (last 24 hours): ${calcUptime(last5Chunks, live).toFixed(5)}%</p>
+    <p>Uptime percentage (lifetime): ${calcUptime(aggregates, live).toFixed(5)}%</p>
+    <p>Uptime percentage (last hour): ${calculateUptimePercentage(getLastHourUptime()).toFixed(5)}%</p>
+    <p>Uptime percentage (last 10 minutes): ${calculateUptimePercentage(getLast10MinutesUptime()).toFixed(5)}%</p>
+    <p>Monitored for: ${formatDuration(monitoredMs)}</p>
   `;
   const reportPath = path.join(__dirname, "reports");
   const reportFilePath = path.join(reportPath, `report_${Date.now()}.html`);
