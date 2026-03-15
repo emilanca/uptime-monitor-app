@@ -617,11 +617,11 @@
 
   function renderMetrics(data) {
     const t = tabs[activeTab];
-    const uptime = t.uptime(data) || 0;
-    const avg = t.avg(data) || 0;
-    const max = t.max(data) || 0;
-    const loss = t.loss(data) || 0;
-    const dev = t.dev(data) || 0;
+    const uptime = t.uptime(data) ?? 0;
+    const avg = t.avg(data) ?? 0;
+    const max = t.max(data);
+    const loss = t.loss(data) ?? 0;
+    const dev = t.dev(data) ?? 0;
 
     const col = uptimeColor(uptime);
 
@@ -639,7 +639,7 @@
     lossEl.className = 'card-value ' + (loss < 1 ? 'green' : loss < 5 ? 'yellow' : 'red');
 
     // Secondary
-    const maxVal = isFinite(max) ? max.toFixed(1) + 'ms' : '—';
+    const maxVal = (max != null && isFinite(max) && max > 0) ? max.toFixed(1) + 'ms' : '—';
     document.getElementById('cardMaxResponse').textContent = maxVal;
     document.getElementById('cardDeviation').textContent = dev.toFixed(1) + 'ms';
     document.getElementById('cardProbes').textContent = data.totalProbes.toLocaleString();
@@ -701,7 +701,7 @@
     // Show newest first
     const rows = [...aggregates].reverse().map(a => {
       const col = uptimeColor(a.uptime);
-      const maxDisp = isFinite(a.maxResponseTime) ? a.maxResponseTime.toFixed(1) + 'ms' : '—';
+      const maxDisp = (a.maxResponseTime != null && isFinite(a.maxResponseTime) && a.maxResponseTime > 0) ? a.maxResponseTime.toFixed(1) + 'ms' : '—';
       return `<tr>
         <td style="color:var(--text-muted)">#${a.day}</td>
         <td><span class="uptime-pill ${col}">${a.uptime.toFixed(2)}%</span></td>

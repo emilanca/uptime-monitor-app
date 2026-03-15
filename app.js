@@ -66,8 +66,13 @@ function clearState() {
 // Load persisted state before anything else
 loadState();
 
-// Save history every 60 seconds so we lose at most ~1 min of pings on an unclean exit
-setInterval(saveState, 60000);
+// Save history every 60 seconds so we lose at most ~1 min of pings on an unclean exit.
+// Also checkpoint totalMonitoredMs so unclean shutdowns don't lose session duration.
+setInterval(() => {
+  totalMonitoredMs += Date.now() - appStartTime;
+  appStartTime = Date.now(); // reset session start to now
+  saveState();
+}, 60000);
 
 // Save on clean shutdown — accumulate monitored time so "monitoring for" survives restarts
 function shutdown() {
@@ -90,9 +95,9 @@ function formatDuration(ms) {
   return seconds + " seconds";
 }
 
-// Returns 0 instead of -Infinity when the array is empty
+// Returns null when the array is empty (no data ≠ 0ms latency)
 function safeMax(values) {
-  if (values.length === 0) return 0;
+  if (values.length === 0) return null;
   return Math.max(...values);
 }
 
@@ -152,6 +157,14 @@ function pingGoogle() {
           maybeReport();
         }).catch((error) => {
           console.error("Error pinging GitHub (retry):", error);
+          uptimeHistory.push({
+            alive: false,
+            time: null,
+            packetLoss: 100,
+            timestamp: Date.now(),
+            retry: true,
+          });
+          handleConnectivityChange(false);
         });
       } else {
         handleConnectivityChange(true);
@@ -167,6 +180,15 @@ function pingGoogle() {
     })
     .catch((error) => {
       console.error("Error pinging Google:", error);
+      // Record the failure so it's reflected in metrics and triggers notifications
+      uptimeHistory.push({
+        alive: false,
+        time: null,
+        packetLoss: 100,
+        timestamp: Date.now(),
+        retry: false,
+      });
+      handleConnectivityChange(false);
     });
 }
 
@@ -187,10 +209,14 @@ function clearHistoryAndUpdateAggregates() {
   // Primary pings only (non-retry, alive) are used for response time metrics
   const alivePrimary = uptimeHistory.filter(r => r.alive && !r.retry && r.time);
   const avgRT = calculateAverageResponseTime(uptimeHistory);
-  const maxResponseTime = safeMax(alivePrimary.map(r => r.time));
+  const maxResponseTime = safeMax(alivePrimary.map(r => r.time)) ?? 0;
+  const chunkStart = uptimeHistory.length > 0 ? uptimeHistory[0].timestamp : Date.now();
+  const chunkEnd = uptimeHistory.length > 0 ? uptimeHistory[uptimeHistory.length - 1].timestamp : Date.now();
 
   aggregates.push({
     day: aggregates.length + 1,
+    chunkStartTime: chunkStart,
+    chunkEndTime: chunkEnd,
     // Display fields (keep for UI table)
     uptime: calculateUptimePercentage(uptimeHistory),
     probes: uptimeHistory.filter(res => !res.retry).length,
@@ -302,7 +328,7 @@ function calcAvgResponseTime(chunks, liveHistory) {
 }
 
 function calcMaxResponseTime(chunks, liveHistory) {
-  const chunkMaxes = chunks.map(c => chunkRaw(c).maxResponseTime);
+  const chunkMaxes = chunks.map(c => chunkRaw(c).maxResponseTime).filter(v => v > 0);
   const liveTimes = liveHistory.filter(r => r.alive && !r.retry && r.time).map(r => r.time);
   return safeMax([...chunkMaxes, ...liveTimes]);
 }
@@ -318,15 +344,26 @@ function calcAvgPacketLoss(chunks, liveHistory) {
 }
 
 function calcDeviation(chunks, liveHistory) {
-  const hist = chunks.reduce((acc, c) => {
+  // Combine all response times to compute a single global average,
+  // then calculate mean absolute deviation against that global average.
+  // This avoids the inconsistency of summing deviations computed against
+  // different per-chunk averages.
+  const globalAvg = calcAvgResponseTime(chunks, liveHistory);
+
+  const chunkDev = chunks.reduce((acc, c) => {
     const r = chunkRaw(c);
-    return { totalDev: acc.totalDev + r.totalDeviationSum, count: acc.count + r.alivePrimaryCount };
+    if (r.alivePrimaryCount === 0) return acc;
+    // Re-derive deviation against global avg using stored chunk average:
+    // MAD(chunk, globalAvg) ≈ MAD(chunk, chunkAvg) + |chunkAvg - globalAvg|
+    const chunkAvg = r.alivePrimaryCount > 0 ? r.totalResponseTime / r.alivePrimaryCount : 0;
+    const adjustedDev = r.totalDeviationSum + r.alivePrimaryCount * Math.abs(chunkAvg - globalAvg);
+    return { totalDev: acc.totalDev + adjustedDev, count: acc.count + r.alivePrimaryCount };
   }, { totalDev: 0, count: 0 });
+
   const livePrimary = liveHistory.filter(r => r.alive && !r.retry && r.time);
-  const liveAvg = calculateAverageResponseTime(liveHistory);
-  const liveDev = livePrimary.reduce((s, r) => s + Math.abs(r.time - liveAvg), 0);
-  const count = hist.count + livePrimary.length;
-  return count === 0 ? 0 : (hist.totalDev + liveDev) / count;
+  const liveDev = livePrimary.reduce((s, r) => s + Math.abs(r.time - globalAvg), 0);
+  const count = chunkDev.count + livePrimary.length;
+  return count === 0 ? 0 : (chunkDev.totalDev + liveDev) / count;
 }
 
 // ---------------------------------------------------------------------------
