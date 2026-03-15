@@ -6,6 +6,7 @@ import fs from "fs";
 const app = express();
 const PORT = 5555;
 const PING_INTERVAL = 5000; // 5 seconds
+const NTFY_TOPIC = "emil-internet-925";
 
 const __dirname = path.resolve();
 const DATA_FILE = path.join(__dirname, "data", "state.json");
@@ -98,6 +99,40 @@ function safeMax(values) {
 }
 
 // ---------------------------------------------------------------------------
+// Notifications (ntfy.sh)
+// ---------------------------------------------------------------------------
+
+let isInternetDown = false;
+let outageStart = null;
+
+async function sendNtfy(title, message) {
+  try {
+    await fetch(`https://ntfy.sh/${NTFY_TOPIC}`, {
+      method: "POST",
+      headers: { "Title": title, "Priority": "high", "Tags": "warning" },
+      body: message,
+    });
+  } catch (err) {
+    console.error("Failed to send ntfy notification:", err);
+  }
+}
+
+function handleConnectivityChange(alive) {
+  if (!alive && !isInternetDown) {
+    isInternetDown = true;
+    outageStart = Date.now();
+    sendNtfy("Internet is down", "Both Google and GitHub are unreachable.");
+    console.log("Internet DOWN — notification sent.");
+  } else if (alive && isInternetDown) {
+    isInternetDown = false;
+    const duration = outageStart ? Math.round((Date.now() - outageStart) / 1000) : 0;
+    sendNtfy("Internet is back", `Connection restored after ${duration}s.`);
+    console.log(`Internet UP — was down for ${duration}s, notification sent.`);
+    outageStart = null;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Ping loop
 // ---------------------------------------------------------------------------
 
@@ -115,11 +150,13 @@ function pingGoogle() {
             timestamp: Date.now(),
             retry: true,
           });
+          handleConnectivityChange(retryResult.alive);
           maybeReport();
         }).catch((error) => {
           console.error("Error pinging GitHub (retry):", error);
         });
       } else {
+        handleConnectivityChange(true);
         uptimeHistory.push({
           alive: result.alive,
           time: result.time,
