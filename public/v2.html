@@ -202,12 +202,18 @@
       font-weight: 800;
       line-height: 1;
     }
-    .uptime-dec {
-      font-size: 13px;
-      font-weight: 500;
+    .uptime-dec-main {
+      font-size: 22px;
+      font-weight: 600;
       line-height: 1;
-      padding-bottom: 4px;
-      opacity: 0.65;
+      padding-bottom: 3px;
+    }
+    .uptime-dec-fine {
+      font-size: 12px;
+      font-weight: 400;
+      line-height: 1;
+      padding-bottom: 5px;
+      opacity: 0.45;
     }
 
     .card-sub {
@@ -797,7 +803,7 @@
       const col = uptimeColor(uptime);
       const str = uptime.toFixed(5);
       const dot = str.indexOf('.');
-      uptimeEl.innerHTML = `<span class="uptime-int">${str.slice(0, dot)}</span><span class="uptime-dec">${str.slice(dot)}%</span>`;
+      uptimeEl.innerHTML = `<span class="uptime-int">${str.slice(0, dot)}</span><span class="uptime-dec-main">${str.slice(dot, dot + 3)}</span><span class="uptime-dec-fine">${str.slice(dot + 3)}%</span>`;
       uptimeEl.className = 'card-value ' + col;
       if (uptime >= 95) {
         badge.className = 'status-badge up';
