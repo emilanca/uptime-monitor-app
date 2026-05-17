@@ -75,7 +75,6 @@
       padding: 40px 24px 80px;
     }
 
-    /* Status hero */
     .status-hero {
       display: flex;
       align-items: center;
@@ -127,7 +126,6 @@
       margin-top: 4px;
     }
 
-    /* Tabs */
     .tabs {
       display: flex;
       gap: 4px;
@@ -159,7 +157,6 @@
       border: 1px solid var(--border);
     }
 
-    /* Metric cards */
     .cards {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -200,7 +197,6 @@
       color: var(--text-muted);
     }
 
-    /* Secondary cards row */
     .cards-sm {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -231,14 +227,62 @@
       font-weight: 600;
     }
 
-    /* History chart */
+    .card-sm-sub {
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    .chart-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
     .section-title {
       font-size: 13px;
       font-weight: 600;
       color: var(--text-muted);
       text-transform: uppercase;
       letter-spacing: 0.08em;
+    }
+
+    .section-title-standalone {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
       margin-bottom: 14px;
+    }
+
+    .zoom-btns {
+      display: flex;
+      gap: 2px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 2px;
+    }
+
+    .zoom-btn {
+      padding: 3px 10px;
+      border-radius: 4px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .zoom-btn:hover { color: var(--text); }
+
+    .zoom-btn.active {
+      background: var(--surface);
+      color: var(--text);
+      border-color: var(--border);
     }
 
     .chart-container {
@@ -252,7 +296,7 @@
     .chart-bars {
       display: flex;
       align-items: flex-end;
-      gap: 4px;
+      gap: 2px;
       height: 80px;
     }
 
@@ -264,11 +308,12 @@
       height: 100%;
       justify-content: flex-end;
       position: relative;
+      min-width: 2px;
     }
 
     .chart-bar {
       width: 100%;
-      border-radius: 3px 3px 0 0;
+      border-radius: 2px 2px 0 0;
       min-height: 4px;
       transition: height 0.3s;
       cursor: default;
@@ -293,21 +338,44 @@
 
     .chart-bar-wrap:hover .chart-bar-tooltip { display: block; }
 
+    .chart-axis {
+      display: flex;
+      gap: 2px;
+      margin-top: 6px;
+    }
+
+    .chart-axis-slot {
+      flex: 1;
+      font-size: 9px;
+      color: var(--text-muted);
+      overflow: hidden;
+      white-space: nowrap;
+      min-width: 2px;
+    }
+
     .chart-legend {
       display: flex;
       justify-content: space-between;
-      margin-top: 8px;
+      margin-top: 4px;
       font-size: 11px;
       color: var(--text-muted);
     }
 
-    /* History table */
     .history-container {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius);
       overflow: hidden;
     }
+
+    .history-scroll {
+      max-height: 420px;
+      overflow-y: auto;
+    }
+
+    .history-scroll::-webkit-scrollbar { width: 6px; }
+    .history-scroll::-webkit-scrollbar-track { background: var(--surface); }
+    .history-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
     .history-table {
       width: 100%;
@@ -316,6 +384,9 @@
     }
 
     .history-table th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
       padding: 10px 16px;
       text-align: left;
       font-size: 11px;
@@ -335,6 +406,10 @@
 
     .history-table tr:last-child td { border-bottom: none; }
     .history-table tr:hover td { background: var(--surface2); }
+
+    .row-degraded td:first-child { box-shadow: inset 3px 0 0 var(--yellow); }
+    .row-down td:first-child { box-shadow: inset 3px 0 0 var(--red); }
+    .retry-warm { color: var(--yellow); font-weight: 600; }
 
     .uptime-pill {
       display: inline-flex;
@@ -357,7 +432,6 @@
       font-size: 14px;
     }
 
-    /* Footer */
     footer {
       text-align: center;
       padding: 24px;
@@ -403,21 +477,14 @@
       max-width: 380px;
       width: 90%;
     }
-    .modal h3 {
-      font-size: 16px;
-      margin-bottom: 10px;
-    }
+    .modal h3 { font-size: 16px; margin-bottom: 10px; }
     .modal p {
       font-size: 13px;
       color: var(--text-muted);
       margin-bottom: 24px;
       line-height: 1.5;
     }
-    .modal-actions {
-      display: flex;
-      gap: 10px;
-      justify-content: flex-end;
-    }
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
     .btn-cancel {
       background: transparent;
       border: 1px solid var(--border);
@@ -443,6 +510,7 @@
       .cards, .cards-sm { grid-template-columns: 1fr 1fr; }
       main { padding: 24px 16px 60px; }
       .status-headline { font-size: 22px; }
+      .chart-header { flex-direction: column; align-items: flex-start; gap: 10px; }
     }
   </style>
 </head>
@@ -458,7 +526,6 @@
   </div>
 </header>
 
-<!-- Confirmation modal -->
 <div class="modal-overlay" id="clearModal">
   <div class="modal">
     <h3>Clear all data?</h3>
@@ -472,7 +539,6 @@
 
 <main>
 
-  <!-- Status Hero -->
   <div class="status-hero">
     <div class="status-badge up" id="statusBadge">
       <span class="status-dot"></span>
@@ -484,7 +550,6 @@
     </div>
   </div>
 
-  <!-- Time tabs -->
   <div class="tabs">
     <button class="tab" data-interval="10m" onclick="setTab('10m')">10 min</button>
     <button class="tab" data-interval="1h" onclick="setTab('1h')">1 hour</button>
@@ -492,7 +557,6 @@
     <button class="tab" data-interval="lifetime" onclick="setTab('lifetime')">Lifetime</button>
   </div>
 
-  <!-- Primary metric cards -->
   <div class="cards">
     <div class="card">
       <div class="card-label">Uptime</div>
@@ -511,7 +575,6 @@
     </div>
   </div>
 
-  <!-- Secondary metric cards -->
   <div class="cards-sm">
     <div class="card-sm">
       <div class="card-sm-label">Max Response</div>
@@ -522,42 +585,52 @@
       <div class="card-sm-value" id="cardDeviation">—</div>
     </div>
     <div class="card-sm">
-      <div class="card-sm-label">Total Probes</div>
-      <div class="card-sm-value" id="cardProbes">—</div>
+      <div class="card-sm-label">Fallbacks</div>
+      <div class="card-sm-value" id="cardFallbacks">—</div>
+      <div class="card-sm-sub" id="cardFallbacksSub"></div>
     </div>
   </div>
 
-  <!-- Response time chart -->
-  <div class="section-title">Response time — 4-hour chunks</div>
-  <div class="chart-container" id="chartContainer">
+  <div class="chart-header">
+    <div class="section-title" id="chartTitle">Response time — last 7 days</div>
+    <div class="zoom-btns">
+      <button class="zoom-btn active" data-window="7d" onclick="setChartWindow('7d')">7D</button>
+      <button class="zoom-btn" data-window="30d" onclick="setChartWindow('30d')">30D</button>
+      <button class="zoom-btn" data-window="all" onclick="setChartWindow('all')">All</button>
+    </div>
+  </div>
+  <div class="chart-container">
     <div class="chart-bars" id="chartBars">
       <div class="empty-state" style="width:100%">No historical data yet</div>
     </div>
+    <div class="chart-axis" id="chartAxis"></div>
     <div class="chart-legend">
       <span>oldest</span>
       <span>most recent</span>
     </div>
   </div>
 
-  <!-- Aggregate history -->
-  <div class="section-title">4-hour history</div>
+  <div class="section-title-standalone">History</div>
   <div class="history-container">
-    <table class="history-table">
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Uptime</th>
-          <th>Avg Response</th>
-          <th>Max Response</th>
-          <th>Packet Loss</th>
-          <th>Jitter</th>
-          <th>Probes</th>
-        </tr>
-      </thead>
-      <tbody id="historyBody">
-        <tr><td colspan="7" class="empty-state">No historical data yet</td></tr>
-      </tbody>
-    </table>
+    <div class="history-scroll">
+      <table class="history-table">
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Uptime</th>
+            <th>Avg Response</th>
+            <th>Max Response</th>
+            <th>Packet Loss</th>
+            <th>Jitter</th>
+            <th>Probes</th>
+            <th>Retries</th>
+          </tr>
+        </thead>
+        <tbody id="historyBody">
+          <tr><td colspan="8" class="empty-state">No historical data yet</td></tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 
 </main>
@@ -569,6 +642,7 @@
 <script>
   let currentData = null;
   let activeTab = '24h';
+  let chartWindow = '7d';
 
   const tabs = {
     '10m': {
@@ -615,15 +689,78 @@
     return 'red';
   }
 
+  function fmtDateTime(ts) {
+    const d = new Date(ts);
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return months[d.getMonth()] + ' ' + d.getDate() + ' · ' +
+      String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+  }
+
+  function fmtShortDate(ts) {
+    const d = new Date(ts);
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return months[d.getMonth()] + ' ' + d.getDate();
+  }
+
+  function rollupDaily(aggregates, daysBack) {
+    let src = aggregates;
+    if (daysBack) {
+      const cutoff = Date.now() - daysBack * 86400000;
+      src = aggregates.filter(a => a.chunkStartTime >= cutoff);
+    }
+    const byDay = {};
+    src.forEach(a => {
+      const key = new Date(a.chunkStartTime).toISOString().slice(0, 10);
+      if (!byDay[key]) byDay[key] = { key, ts: new Date(key + 'T00:00:00').getTime(), totalRT: 0, totalProbes: 0, successProbes: 0, maxRT: 0, retries: 0, chunkCount: 0 };
+      const b = byDay[key];
+      b.totalRT += (a.totalResponseTime || 0);
+      b.totalProbes += (a.totalProbesCount || a.probes || 0);
+      b.successProbes += (a.successfulProbes || 0);
+      b.maxRT = Math.max(b.maxRT, a.maxResponseTime || 0);
+      b.retries += (a.retries || 0);
+      b.chunkCount++;
+    });
+    return Object.values(byDay).sort((a, b) => a.ts - b.ts).map(d => ({
+      date: d.key,
+      chunkStartTime: d.ts,
+      averageResponseTime: d.totalProbes > 0 ? d.totalRT / d.totalProbes : 0,
+      maxResponseTime: d.maxRT,
+      uptime: d.totalProbes > 0 ? (d.successProbes / d.totalProbes) * 100 : 100,
+      probes: d.totalProbes,
+      retries: d.retries,
+      chunkCount: d.chunkCount,
+      isDaily: true,
+    }));
+  }
+
+  function getChartData(aggregates) {
+    if (chartWindow === '7d') return aggregates.slice(-42);
+    if (chartWindow === '30d') return rollupDaily(aggregates, 30);
+    return rollupDaily(aggregates);
+  }
+
+  function setChartWindow(w) {
+    chartWindow = w;
+    document.querySelectorAll('.zoom-btn').forEach(el => {
+      el.classList.toggle('active', el.dataset.window === w);
+    });
+    const titles = {
+      '7d': 'Response time — last 7 days',
+      '30d': 'Response time — last 30 days (daily)',
+      'all': 'Response time — all time (daily)',
+    };
+    document.getElementById('chartTitle').textContent = titles[w];
+    if (currentData) renderChart(currentData.aggregates);
+  }
+
   function renderMetrics(data) {
     const t = tabs[activeTab];
-    const uptime = t.uptime(data); // may be null when no data yet
+    const uptime = t.uptime(data);
     const avg = t.avg(data) ?? 0;
     const max = t.max(data);
     const loss = t.loss(data) ?? 0;
     const dev = t.dev(data) ?? 0;
 
-    // Uptime card
     const uptimeEl = document.getElementById('cardUptime');
     const badge = document.getElementById('statusBadge');
     const headline = document.getElementById('statusHeadline');
@@ -653,21 +790,22 @@
       }
     }
 
-    // Response
     document.getElementById('cardAvgResponse').textContent = avg.toFixed(1) + 'ms';
 
-    // Packet loss
     const lossEl = document.getElementById('cardPacketLoss');
     lossEl.textContent = loss.toFixed(2) + '%';
     lossEl.className = 'card-value ' + (loss < 1 ? 'green' : loss < 5 ? 'yellow' : 'red');
 
-    // Secondary
     const maxVal = (max != null && isFinite(max) && max > 0) ? max.toFixed(1) + 'ms' : '—';
     document.getElementById('cardMaxResponse').textContent = maxVal;
     document.getElementById('cardDeviation').textContent = dev.toFixed(1) + 'ms';
-    document.getElementById('cardProbes').textContent = data.totalProbes.toLocaleString();
 
-    // Footer
+    const retries = data.totalRetries || 0;
+    const probes = data.totalProbes || 1;
+    const rate = (retries / probes * 100).toFixed(3);
+    document.getElementById('cardFallbacks').textContent = retries.toLocaleString();
+    document.getElementById('cardFallbacksSub').textContent = rate + '% of ' + probes.toLocaleString() + ' probes';
+
     document.getElementById('monitoringFor').textContent = 'Monitoring for ' + data.lastUpdated;
   }
 
@@ -675,47 +813,76 @@
     const container = document.getElementById('chartBars');
     if (!aggregates || aggregates.length === 0) {
       container.innerHTML = '<div class="empty-state" style="width:100%">No historical data yet</div>';
+      document.getElementById('chartAxis').innerHTML = '';
       return;
     }
 
-    const times = aggregates.map(a => a.averageResponseTime).filter(v => v > 0);
+    const data = getChartData(aggregates);
+    const times = data.map(a => a.averageResponseTime).filter(v => v > 0);
     const maxTime = Math.max(...times, 1);
 
-    container.innerHTML = aggregates.map(a => {
+    container.innerHTML = data.map(a => {
       const height = Math.max((a.averageResponseTime / maxTime) * 100, 4);
       const col = a.uptime >= 95 ? 'var(--green)' : a.uptime >= 90 ? 'var(--yellow)' : 'var(--red)';
-      return `
-        <div class="chart-bar-wrap">
-          <div class="chart-bar-tooltip">
-            Chunk ${a.day}<br>
-            Uptime: ${a.uptime.toFixed(2)}%<br>
-            Avg: ${a.averageResponseTime.toFixed(1)}ms
-          </div>
-          <div class="chart-bar" style="height:${height}%;background:${col}"></div>
-        </div>
-      `;
+      const label = a.isDaily ? fmtShortDate(a.chunkStartTime) : fmtDateTime(a.chunkStartTime);
+      const extra = a.isDaily ? `<br>${a.chunkCount} 4h chunks` : '';
+      return `<div class="chart-bar-wrap">
+        <div class="chart-bar-tooltip">${label}<br>Uptime: ${a.uptime.toFixed(2)}%<br>Avg RT: ${a.averageResponseTime.toFixed(1)}ms${extra}</div>
+        <div class="chart-bar" style="height:${height}%;background:${col}"></div>
+      </div>`;
     }).join('');
+
+    renderAxis(data);
+  }
+
+  function renderAxis(chunks) {
+    const axis = document.getElementById('chartAxis');
+    axis.innerHTML = '';
+    if (!chunks.length) return;
+
+    const boundarySet = new Set();
+    if (chartWindow === '7d') {
+      let prevDay = null;
+      chunks.forEach((c, i) => {
+        const day = new Date(c.chunkStartTime).toISOString().slice(0, 10);
+        if (day !== prevDay) { boundarySet.add(i); prevDay = day; }
+      });
+    } else {
+      for (let i = 0; i < chunks.length; i += 7) boundarySet.add(i);
+    }
+
+    chunks.forEach((c, i) => {
+      const el = document.createElement('div');
+      el.className = 'chart-axis-slot';
+      if (boundarySet.has(i)) el.textContent = fmtShortDate(c.chunkStartTime);
+      axis.appendChild(el);
+    });
   }
 
   function renderHistory(aggregates) {
     const tbody = document.getElementById('historyBody');
     if (!aggregates || aggregates.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No historical data yet</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8" class="empty-state">No historical data yet</td></tr>';
       return;
     }
 
-    // Show newest first
     const rows = [...aggregates].reverse().map(a => {
       const col = uptimeColor(a.uptime);
       const maxDisp = (a.maxResponseTime != null && isFinite(a.maxResponseTime) && a.maxResponseTime > 0) ? a.maxResponseTime.toFixed(1) + 'ms' : '—';
-      return `<tr>
-        <td style="color:var(--text-muted)">#${a.day}</td>
+      const rowClass = a.uptime < 90 ? 'row-down' : a.uptime < 99 ? 'row-degraded' : '';
+      const retries = a.retries || 0;
+      const retryCell = retries > 0
+        ? `<td class="${retries > 5 ? 'retry-warm' : ''}">${retries}</td>`
+        : `<td style="color:var(--text-muted)">—</td>`;
+      return `<tr class="${rowClass}">
+        <td style="color:var(--text-muted);white-space:nowrap">${fmtDateTime(a.chunkStartTime)}</td>
         <td><span class="uptime-pill ${col}">${a.uptime.toFixed(2)}%</span></td>
         <td>${a.averageResponseTime.toFixed(1)}ms</td>
         <td>${maxDisp}</td>
         <td>${a.averagePacketLoss.toFixed(2)}%</td>
         <td>${a.averageDeviation.toFixed(1)}ms</td>
         <td>${a.probes.toLocaleString()}</td>
+        ${retryCell}
       </tr>`;
     }).join('');
 
@@ -755,7 +922,6 @@
       .catch(err => console.error('Clear failed:', err));
   }
 
-  // Close modal on backdrop click
   document.getElementById('clearModal').addEventListener('click', function(e) {
     if (e.target === this) closeClearModal();
   });
