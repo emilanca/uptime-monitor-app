@@ -16,6 +16,7 @@ const DATA_FILE = path.join(__dirname, "data", "state.json");
 // ---------------------------------------------------------------------------
 
 let uptimeHistory = [];
+let recentHistory = []; // rolling 2-hour buffer for 10m/1h metrics (survives aggregation)
 let aggregates = [];
 let appStartTime = Date.now();
 let totalMonitoredMs = 0; // cumulative monitored ms across restarts
@@ -30,6 +31,7 @@ function loadState() {
     const state = JSON.parse(raw);
     if (Array.isArray(state.aggregates)) aggregates = state.aggregates;
     if (Array.isArray(state.uptimeHistory)) uptimeHistory = state.uptimeHistory;
+    if (Array.isArray(state.recentHistory)) recentHistory = state.recentHistory;
     if (typeof state.appStartTime === "number") appStartTime = state.appStartTime;
     if (typeof state.totalMonitoredMs === "number") totalMonitoredMs = state.totalMonitoredMs;
     console.log(`State loaded: ${aggregates.length} aggregate chunks, ${uptimeHistory.length} history entries, started ${new Date(appStartTime).toISOString()}`);
@@ -45,7 +47,7 @@ function loadState() {
 function saveState() {
   try {
     fs.mkdirSync(path.dirname(DATA_FILE), { recursive: true });
-    fs.writeFileSync(DATA_FILE, JSON.stringify({ appStartTime, aggregates, uptimeHistory, totalMonitoredMs }));
+    fs.writeFileSync(DATA_FILE, JSON.stringify({ appStartTime, aggregates, uptimeHistory, recentHistory, totalMonitoredMs }));
   } catch (err) {
     console.error("Failed to save state to disk:", err);
   }
@@ -53,6 +55,7 @@ function saveState() {
 
 function clearState() {
   uptimeHistory.length = 0;
+  recentHistory.length = 0;
   aggregates.length = 0;
   appStartTime = Date.now();
   totalMonitoredMs = 0;
@@ -71,6 +74,9 @@ loadState();
 setInterval(() => {
   totalMonitoredMs += Date.now() - appStartTime;
   appStartTime = Date.now(); // reset session start to now
+  // Trim recentHistory to last 2 hours
+  const twoHoursAgo = Date.now() - 2 * 60 * 60 * 1000;
+  recentHistory = recentHistory.filter(r => r.timestamp >= twoHoursAgo);
   saveState();
 }, 60000);
 
@@ -147,48 +153,44 @@ function pingGoogle() {
       if (!result.alive) {
         ping.promise.probe("github.com").then((retryResult) => {
           console.log("Google is not alive. Retrying once with github...", retryResult.alive);
-          uptimeHistory.push({
+          const retryEntry = {
             alive: retryResult.alive,
             time: null, // don't record GitHub response time — it's a different host
-            packetLoss: retryResult.packetLoss ? parseFloat(retryResult.packetLoss) : null,
+            packetLoss: retryResult.packetLoss != null ? parseFloat(retryResult.packetLoss) : null,
             timestamp: Date.now(),
             retry: true,
-          });
+          };
+          uptimeHistory.push(retryEntry);
+          recentHistory.push(retryEntry);
           handleConnectivityChange(retryResult.alive);
           maybeReport();
         }).catch((error) => {
           console.error("Error pinging GitHub (retry):", error);
-          uptimeHistory.push({
-            alive: false,
-            time: null,
-            packetLoss: 100,
-            timestamp: Date.now(),
-            retry: true,
-          });
+          const errEntry = { alive: false, time: null, packetLoss: 100, timestamp: Date.now(), retry: true };
+          uptimeHistory.push(errEntry);
+          recentHistory.push(errEntry);
           handleConnectivityChange(false);
         });
       } else {
         handleConnectivityChange(true);
-        uptimeHistory.push({
+        const entry = {
           alive: result.alive,
           time: result.time,
-          packetLoss: result.packetLoss ? parseFloat(result.packetLoss) : null,
+          packetLoss: result.packetLoss != null ? parseFloat(result.packetLoss) : null,
           timestamp: Date.now(),
           retry: false,
-        });
+        };
+        uptimeHistory.push(entry);
+        recentHistory.push(entry);
         maybeReport();
       }
     })
     .catch((error) => {
       console.error("Error pinging Google:", error);
       // Record the failure so it's reflected in metrics and triggers notifications
-      uptimeHistory.push({
-        alive: false,
-        time: null,
-        packetLoss: 100,
-        timestamp: Date.now(),
-        retry: false,
-      });
+      const catchEntry = { alive: false, time: null, packetLoss: 100, timestamp: Date.now(), retry: false };
+      uptimeHistory.push(catchEntry);
+      recentHistory.push(catchEntry);
       handleConnectivityChange(false);
     });
 }
@@ -220,7 +222,7 @@ function clearHistoryAndUpdateAggregates() {
     chunkStartTime: chunkStart,
     chunkEndTime: chunkEnd,
     // Display fields (keep for UI table)
-    uptime: calculateUptimePercentage(uptimeHistory),
+    uptime: calculateUptimePercentage(uptimeHistory) ?? 0,
     probes: uptimeHistory.filter(res => !res.retry).length,
     retries: uptimeHistory.filter(res => res.retry).length,
     averageResponseTime: avgRT,
@@ -249,14 +251,14 @@ setInterval(clearHistoryAndUpdateAggregates, 14400000);
 
 function getLastNUptime(hours) {
   const startTime = Date.now() - (hours * 60 * 60 * 1000);
-  return uptimeHistory.filter(res => res.timestamp >= startTime);
+  return recentHistory.filter(res => res.timestamp >= startTime);
 }
 
 function getLastHourUptime() { return getLastNUptime(1); }
 function getLast10MinutesUptime() { return getLastNUptime(10 / 60); }
 
 function calculateUptimePercentage(pingResults) {
-  if (pingResults.length === 0) return 0;
+  if (pingResults.length === 0) return null;
   const successfulPings = pingResults.filter(r => r.alive).length;
   return (successfulPings / pingResults.length) * 100;
 }
@@ -440,8 +442,8 @@ function sendMonitoringReport() {
     <h1>Monitoring Report</h1>
     <p>Uptime percentage (last 24 hours): ${calcUptime(last5Chunks, live).toFixed(5)}%</p>
     <p>Uptime percentage (lifetime): ${calcUptime(aggregates, live).toFixed(5)}%</p>
-    <p>Uptime percentage (last hour): ${calculateUptimePercentage(getLastHourUptime()).toFixed(5)}%</p>
-    <p>Uptime percentage (last 10 minutes): ${calculateUptimePercentage(getLast10MinutesUptime()).toFixed(5)}%</p>
+    <p>Uptime percentage (last hour): ${(calculateUptimePercentage(getLastHourUptime()) ?? 0).toFixed(5)}%</p>
+    <p>Uptime percentage (last 10 minutes): ${(calculateUptimePercentage(getLast10MinutesUptime()) ?? 0).toFixed(5)}%</p>
     <p>Monitored for: ${formatDuration(monitoredMs)}</p>
   `;
   const reportPath = path.join(__dirname, "reports");

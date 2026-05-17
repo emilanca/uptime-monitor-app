@@ -617,18 +617,41 @@
 
   function renderMetrics(data) {
     const t = tabs[activeTab];
-    const uptime = t.uptime(data) ?? 0;
+    const uptime = t.uptime(data); // may be null when no data yet
     const avg = t.avg(data) ?? 0;
     const max = t.max(data);
     const loss = t.loss(data) ?? 0;
     const dev = t.dev(data) ?? 0;
 
-    const col = uptimeColor(uptime);
-
     // Uptime card
     const uptimeEl = document.getElementById('cardUptime');
-    uptimeEl.textContent = uptime.toFixed(2) + '%';
-    uptimeEl.className = 'card-value ' + col;
+    const badge = document.getElementById('statusBadge');
+    const headline = document.getElementById('statusHeadline');
+
+    if (uptime == null) {
+      uptimeEl.textContent = '—';
+      uptimeEl.className = 'card-value';
+      badge.className = 'status-badge up';
+      document.getElementById('statusText').textContent = 'No data';
+      headline.textContent = 'Collecting data…';
+    } else {
+      const col = uptimeColor(uptime);
+      uptimeEl.textContent = uptime.toFixed(2) + '%';
+      uptimeEl.className = 'card-value ' + col;
+      if (uptime >= 95) {
+        badge.className = 'status-badge up';
+        document.getElementById('statusText').textContent = 'All good';
+        headline.textContent = 'Internet is up';
+      } else if (uptime >= 90) {
+        badge.className = 'status-badge up';
+        document.getElementById('statusText').textContent = 'Degraded';
+        headline.textContent = 'Experiencing some issues';
+      } else {
+        badge.className = 'status-badge down';
+        document.getElementById('statusText').textContent = 'Down';
+        headline.textContent = 'Internet issues detected';
+      }
+    }
 
     // Response
     document.getElementById('cardAvgResponse').textContent = avg.toFixed(1) + 'ms';
@@ -643,23 +666,6 @@
     document.getElementById('cardMaxResponse').textContent = maxVal;
     document.getElementById('cardDeviation').textContent = dev.toFixed(1) + 'ms';
     document.getElementById('cardProbes').textContent = data.totalProbes.toLocaleString();
-
-    // Status badge
-    const badge = document.getElementById('statusBadge');
-    const headline = document.getElementById('statusHeadline');
-    if (uptime >= 95) {
-      badge.className = 'status-badge up';
-      document.getElementById('statusText').textContent = 'All good';
-      headline.textContent = 'Internet is up';
-    } else if (uptime >= 90) {
-      badge.className = 'status-badge up';
-      document.getElementById('statusText').textContent = 'Degraded';
-      headline.textContent = 'Experiencing some issues';
-    } else {
-      badge.className = 'status-badge down';
-      document.getElementById('statusText').textContent = 'Down';
-      headline.textContent = 'Internet issues detected';
-    }
 
     // Footer
     document.getElementById('monitoringFor').textContent = 'Monitoring for ' + data.lastUpdated;
