@@ -159,9 +159,9 @@
 
     .cards {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(2, 1fr);
       gap: 16px;
-      margin-bottom: 32px;
+      margin-bottom: 16px;
     }
 
     .card {
@@ -199,7 +199,7 @@
 
     .cards-sm {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       gap: 16px;
       margin-bottom: 40px;
     }
@@ -226,6 +226,10 @@
       font-size: 20px;
       font-weight: 600;
     }
+
+    .card-sm-value.green { color: var(--green); }
+    .card-sm-value.yellow { color: var(--yellow); }
+    .card-sm-value.red { color: var(--red); }
 
     .card-sm-sub {
       font-size: 10px;
@@ -507,7 +511,8 @@
     .btn-confirm-clear:hover { opacity: 0.85; }
 
     @media (max-width: 600px) {
-      .cards, .cards-sm { grid-template-columns: 1fr 1fr; }
+      .cards { grid-template-columns: 1fr 1fr; }
+      .cards-sm { grid-template-columns: 1fr 1fr; }
       main { padding: 24px 16px 60px; }
       .status-headline { font-size: 22px; }
       .chart-header { flex-direction: column; align-items: flex-start; gap: 10px; }
@@ -568,20 +573,19 @@
       <div class="card-value blue" id="cardAvgResponse">—</div>
       <div class="card-sub">average ping latency</div>
     </div>
-    <div class="card">
-      <div class="card-label">Packet Loss</div>
-      <div class="card-value" id="cardPacketLoss">—</div>
-      <div class="card-sub">average packet loss</div>
-    </div>
   </div>
 
   <div class="cards-sm">
+    <div class="card-sm">
+      <div class="card-sm-label">Packet Loss</div>
+      <div class="card-sm-value" id="cardPacketLoss">—</div>
+    </div>
     <div class="card-sm">
       <div class="card-sm-label">Max Response</div>
       <div class="card-sm-value" id="cardMaxResponse">—</div>
     </div>
     <div class="card-sm">
-      <div class="card-sm-label">Jitter (Deviation)</div>
+      <div class="card-sm-label">Jitter</div>
       <div class="card-sm-value" id="cardDeviation">—</div>
     </div>
     <div class="card-sm">
@@ -794,7 +798,7 @@
 
     const lossEl = document.getElementById('cardPacketLoss');
     lossEl.textContent = loss.toFixed(2) + '%';
-    lossEl.className = 'card-value ' + (loss < 1 ? 'green' : loss < 5 ? 'yellow' : 'red');
+    lossEl.className = 'card-sm-value ' + (loss < 1 ? 'green' : loss < 5 ? 'yellow' : 'red');
 
     const maxVal = (max != null && isFinite(max) && max > 0) ? max.toFixed(1) + 'ms' : '—';
     document.getElementById('cardMaxResponse').textContent = maxVal;
