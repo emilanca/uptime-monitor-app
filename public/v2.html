@@ -773,7 +773,7 @@
       headline.textContent = 'Collecting data…';
     } else {
       const col = uptimeColor(uptime);
-      uptimeEl.textContent = uptime.toFixed(2) + '%';
+      uptimeEl.textContent = uptime.toFixed(5) + '%';
       uptimeEl.className = 'card-value ' + col;
       if (uptime >= 95) {
         badge.className = 'status-badge up';
@@ -827,7 +827,7 @@
       const label = a.isDaily ? fmtShortDate(a.chunkStartTime) : fmtDateTime(a.chunkStartTime);
       const extra = a.isDaily ? `<br>${a.chunkCount} 4h chunks` : '';
       return `<div class="chart-bar-wrap">
-        <div class="chart-bar-tooltip">${label}<br>Uptime: ${a.uptime.toFixed(2)}%<br>Avg RT: ${a.averageResponseTime.toFixed(1)}ms${extra}</div>
+        <div class="chart-bar-tooltip">${label}<br>Uptime: ${a.uptime.toFixed(5)}%<br>Avg RT: ${a.averageResponseTime.toFixed(1)}ms${extra}</div>
         <div class="chart-bar" style="height:${height}%;background:${col}"></div>
       </div>`;
     }).join('');
@@ -876,7 +876,7 @@
         : `<td style="color:var(--text-muted)">—</td>`;
       return `<tr class="${rowClass}">
         <td style="color:var(--text-muted);white-space:nowrap">${fmtDateTime(a.chunkStartTime)}</td>
-        <td><span class="uptime-pill ${col}">${a.uptime.toFixed(2)}%</span></td>
+        <td><span class="uptime-pill ${col}">${a.uptime.toFixed(5)}%</span></td>
         <td>${a.averageResponseTime.toFixed(1)}ms</td>
         <td>${maxDisp}</td>
         <td>${a.averagePacketLoss.toFixed(2)}%</td>
