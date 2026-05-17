@@ -192,6 +192,24 @@
     .card-value.red { color: var(--red); }
     .card-value.blue { color: var(--blue); }
 
+    #cardUptime {
+      display: flex;
+      align-items: flex-end;
+      gap: 1px;
+    }
+    .uptime-int {
+      font-size: 42px;
+      font-weight: 800;
+      line-height: 1;
+    }
+    .uptime-dec {
+      font-size: 13px;
+      font-weight: 500;
+      line-height: 1;
+      padding-bottom: 4px;
+      opacity: 0.65;
+    }
+
     .card-sub {
       font-size: 12px;
       color: var(--text-muted);
@@ -770,14 +788,16 @@
     const headline = document.getElementById('statusHeadline');
 
     if (uptime == null) {
-      uptimeEl.textContent = '—';
+      uptimeEl.innerHTML = '—';
       uptimeEl.className = 'card-value';
       badge.className = 'status-badge up';
       document.getElementById('statusText').textContent = 'No data';
       headline.textContent = 'Collecting data…';
     } else {
       const col = uptimeColor(uptime);
-      uptimeEl.textContent = uptime.toFixed(5) + '%';
+      const str = uptime.toFixed(5);
+      const dot = str.indexOf('.');
+      uptimeEl.innerHTML = `<span class="uptime-int">${str.slice(0, dot)}</span><span class="uptime-dec">${str.slice(dot)}%</span>`;
       uptimeEl.className = 'card-value ' + col;
       if (uptime >= 95) {
         badge.className = 'status-badge up';
